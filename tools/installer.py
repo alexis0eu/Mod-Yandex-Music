@@ -14,83 +14,7 @@ import threading
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 
-# Pure Python ASAR tool embedded for standalone single-exe bundle
-def extract_asar(asar_path, extract_dir):
-    os.makedirs(extract_dir, exist_ok=True)
-    with open(asar_path, 'rb') as f:
-        u1, u2, u3, u4 = struct.unpack('<IIII', f.read(16))
-        header_json = f.read(u4).decode('utf-8')
-        import json
-        header = json.loads(header_json)
-        base_offset = 8 + u2
-
-        def extract_node(node, current_path):
-            files = node.get('files', {})
-            for name, item in files.items():
-                target = os.path.join(current_path, name)
-                if 'files' in item:
-                    os.makedirs(target, exist_ok=True)
-                    extract_node(item, target)
-                else:
-                    offset = int(item['offset'])
-                    size = int(item['size'])
-                    f.seek(base_offset + offset)
-                    data = f.read(size)
-                    with open(target, 'wb') as out_f:
-                        out_f.write(data)
-
-        extract_node(header, extract_dir)
-
-def pack_asar(source_dir, asar_path):
-    import json
-    files_list = []
-
-    def scan_dir(dir_path):
-        entries = sorted(os.listdir(dir_path))
-        node = {'files': {}}
-        for entry in entries:
-            full_path = os.path.join(dir_path, entry)
-            if os.path.isdir(full_path):
-                node['files'][entry] = scan_dir(full_path)
-            else:
-                size = os.path.getsize(full_path)
-                files_list.append((full_path, size))
-                node['files'][entry] = {'size': size, 'offset': ''}
-        return node
-
-    header_dict = scan_dir(source_dir)
-
-    current_offset = 0
-    file_idx = 0
-    def assign_offsets(node):
-        nonlocal current_offset, file_idx
-        for k, item in sorted(node['files'].items()):
-            if 'files' in item:
-                assign_offsets(item)
-            else:
-                item['offset'] = str(current_offset)
-                current_offset += files_list[file_idx][1]
-                file_idx += 1
-
-    assign_offsets(header_dict)
-
-    header_json = json.dumps(header_dict, separators=(',', ':')).encode('utf-8')
-    header_len = len(header_json)
-
-    padding = (4 - (header_len % 4)) % 4
-    header_padded = header_json + b'\x00' * padding
-
-    u4 = len(header_padded)
-    u3 = u4 + 4
-    u2 = u3 + 4
-    u1 = 4
-
-    with open(asar_path, 'wb') as f:
-        f.write(struct.pack('<IIII', u1, u2, u3, u4))
-        f.write(header_padded)
-        for filepath, size in files_list:
-            with open(filepath, 'rb') as in_f:
-                shutil.copyfileobj(in_f, f, length=65536)
+from asar_tool import extract_asar, pack_asar
 
 def get_base_dir():
     if getattr(sys, 'frozen', False):
@@ -158,7 +82,8 @@ def patch_executable_integrity(asar_path, log_callback=print):
             orig_header = f.read(u4)
         orig_hash = hashlib.sha256(orig_header).hexdigest().encode("ascii")
 
-    with open(exe_file, "rb") as f:
+    base_exe = exe_bak if os.path.exists(exe_bak) else exe_file
+    with open(base_exe, "rb") as f:
         exe_data = f.read()
 
     patched = False

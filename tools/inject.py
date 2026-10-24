@@ -68,7 +68,8 @@ def patch_executable_integrity(asar_path):
             orig_header = f.read(u4)
         orig_hash = hashlib.sha256(orig_header).hexdigest().encode("ascii")
 
-    with open(exe_file, "rb") as f:
+    base_exe = exe_bak if os.path.exists(exe_bak) else exe_file
+    with open(base_exe, "rb") as f:
         exe_data = f.read()
 
     patched = False
