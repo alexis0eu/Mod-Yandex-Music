@@ -138,6 +138,9 @@ class DiscordRPC {
       this.reconnectTimer = null;
       this.connect();
     }, delayMs);
+    if (this.reconnectTimer && typeof this.reconnectTimer.unref === "function") {
+      this.reconnectTimer.unref();
+    }
   }
 
   setupSocket() {

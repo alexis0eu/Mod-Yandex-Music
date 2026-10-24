@@ -44,7 +44,7 @@ const DEFAULT_SETTINGS = {
 
   // Killer Features: Overlays & Tools
   "downloader/enabled": true,
-  "osd/enabled": true,
+  "osd/enabled": false,
   "autoLiker/enabled": false,
 
   // Killer Features: Overlays

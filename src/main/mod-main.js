@@ -191,7 +191,13 @@ function initModMain() {
       if (mainWindow === win) {
         mainWindow = null;
       }
-      // Destroy background HUD windows so no hidden windows keep the process alive
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+        pollingInterval = null;
+      }
+      if (discordRPC) {
+        try { discordRPC.destroy(); } catch (e) {}
+      }
       if (overlayWindow && !overlayWindow.isDestroyed()) {
         try { overlayWindow.destroy(); } catch (e) {}
         overlayWindow = null;
@@ -200,7 +206,8 @@ function initModMain() {
         try { karaokeWindow.destroy(); } catch (e) {}
         karaokeWindow = null;
       }
-      app.quit();
+      // Force immediate process exit so no zombie tasks linger in Task Manager
+      try { app.exit(0); } catch (e) { app.quit(); }
     });
   }
 
@@ -218,11 +225,15 @@ function initModMain() {
 
   // Handle second instance launch: bring main window to front
   app.on("second-instance", () => {
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      if (mainWindow.isMinimized()) mainWindow.restore();
-      mainWindow.show();
-      mainWindow.setSkipTaskbar(false);
-      mainWindow.focus();
+    const wins = BrowserWindow.getAllWindows();
+    for (const win of wins) {
+      if (!win.isDestroyed() && win !== overlayWindow && win !== karaokeWindow) {
+        if (win.isMinimized()) win.restore();
+        win.show();
+        win.setSkipTaskbar(false);
+        win.focus();
+        return;
+      }
     }
   });
 
@@ -611,6 +622,7 @@ function updateDiscordActivity(state) {
 let pollingInterval = null;
 function startPlayerStatePolling() {
   if (pollingInterval) return;
+  setTimeout(() => { if (pollingInterval && typeof pollingInterval.unref === 'function') pollingInterval.unref(); }, 100);
   pollingInterval = setInterval(async () => {
     try {
       // Feature 8: Eliminate poller vs. renderer race condition.

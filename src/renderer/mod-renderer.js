@@ -17,12 +17,14 @@
 
   const nuke = () => {
     try {
-      const splashes = document.querySelectorAll('div[class*="SplashScreen_root"], .SplashScreen_root__3jzFk, div[class*="WithTopBanner_banner"]');
+      const splashes = document.querySelectorAll('div[class*="SplashScreen_root"], .SplashScreen_root__3jzFk, div[class*="WithTopBanner_banner"], #ym-osd-toast, .ym-osd-toast');
       splashes.forEach(hideElement);
+      const osd = document.getElementById("ym-osd-toast");
+      if (osd) osd.remove();
       const topRoots = document.querySelectorAll('div[class*="WithTopBanner_root"]');
       topRoots.forEach(node => {
-        node.style.setProperty("display", "block", "important");
-        node.style.setProperty("grid-template", "none", "important");
+        node.style.setProperty("display", "flex", "important");
+        node.style.setProperty("flex-direction", "column", "important");
         node.style.setProperty("height", "100vh", "important");
       });
     } catch (e) {}
@@ -559,24 +561,9 @@
   }
 
   function showOsdTrackToast(title, artist, coverUrl) {
-    if (modSettings["osd/enabled"] === false) return;
-    let toast = document.getElementById("ym-osd-toast");
-    if (!toast) {
-      toast = document.createElement("div");
-      toast.id = "ym-osd-toast";
-      toast.className = "ym-osd-toast";
-      document.body.appendChild(toast);
-    }
-    toast.innerHTML = `
-      <img class="ym-osd-cover" src="${coverUrl || 'https://avatars.yandex.net/get-music-content/175942/default/200x200'}" alt="Cover">
-      <div class="ym-osd-info">
-        <div class="ym-osd-title">${title}</div>
-        <div class="ym-osd-artist">${artist}</div>
-      </div>
-    `;
-    toast.classList.add("show");
-    clearTimeout(window.__osdTimer);
-    window.__osdTimer = setTimeout(() => toast.classList.remove("show"), 3200);
+    // Disabled inside main window to permanently prevent layout shifts or unwanted top banners
+    const existing = document.getElementById("ym-osd-toast");
+    if (existing) existing.remove();
   }
 
   function injectPlayerDownloadButton() {
@@ -1920,7 +1907,7 @@
           if (state.track.id && state.track.id !== lastTrackId && state.track.title) {
             lastTrackId = state.track.id;
             fetchTrackLyrics(state.track.title, state.track.artists, state.track.rawMeta, state.track.id);
-            showOsdTrackToast(state.track.title, state.track.artists, state.track.coverUrl);
+            // showOsdTrackToast disabled to prevent layout shift
           }
         }
       } catch (err) {}

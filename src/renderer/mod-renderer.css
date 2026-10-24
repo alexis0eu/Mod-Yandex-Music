@@ -736,11 +736,13 @@ div[class*="GetPlus_"] {
 
 /* === FIX: PERMANENTLY PREVENT TOP BANNER SPLIT LAYOUT === */
 div[class*="WithTopBanner_root"] {
-  display: block !important;
-  grid-template: none !important;
+  display: flex !important;
+  flex-direction: column !important;
   height: 100vh !important;
   max-height: 100vh !important;
   overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 div[class*="WithTopBanner_banner"],
@@ -758,14 +760,48 @@ div[class*="WithTopBanner_banner_hasShown"] {
 }
 
 div[class*="WithTopBanner_content"] {
-  height: 100vh !important;
-  max-height: 100vh !important;
-  min-height: 100vh !important;
+  flex: 1 1 auto !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
   overflow: hidden !important;
 }
 
 div[class*="CommonLayout_root"],
 div[class*="DefaultLayout_root"] {
+  height: 100% !important;
+  max-height: 100% !important;
+}
+
+/* Ensure OSD toast or any accidental top track image is permanently eradicated */
+#ym-osd-toast,
+.ym-osd-toast,
+.ym-osd-cover,
+.ym-osd-info,
+.ym-osd-title,
+.ym-osd-artist {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  max-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  position: fixed !important;
+  top: -9999px !important;
+  left: -9999px !important;
+}
+
+/* Ensure Fullscreen Player Modal is strictly overlay when open */
+div[data-test-id*="FULLSCREEN_PLAYER_MODAL"],
+div[class*="FullscreenPlayerDesktop_root"],
+div[class*="FullscreenPlayerMobile_root"] {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
   height: 100vh !important;
-  max-height: 100vh !important;
+  z-index: 999999 !important;
+  margin: 0 !important;
 }
