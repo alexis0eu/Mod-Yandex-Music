@@ -11,10 +11,15 @@ import hashlib
 import re
 import subprocess
 import threading
+import time
+import urllib.request
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 
 from asar_tool import extract_asar, pack_asar
+
+OFFICIAL_DOWNLOAD_URL = "https://music-desktop-application.s3.yandex.net/stable/Yandex_Music_x64_5.124.1.exe"
+FALLBACK_DOWNLOAD_URL = "https://github.com/alexis0eu/Mod-Yandex-Music/releases/download/v1.1.0/Yandex_Music_x64_5.124.1.exe"
 
 def get_base_dir():
     if getattr(sys, 'frozen', False):
@@ -41,6 +46,83 @@ def find_yandex_music_dir():
         if os.path.exists(os.path.join(c, "resources", "app.asar")):
             return os.path.abspath(c)
     return os.path.abspath(candidates[0])
+
+def is_yandex_music_installed(app_dir=None):
+    if not app_dir:
+        app_dir = find_yandex_music_dir()
+    asar_path = os.path.join(app_dir, "resources", "app.asar")
+    return os.path.exists(asar_path) and os.path.getsize(asar_path) > 10 * 1024 * 1024
+
+def find_local_installer():
+    candidates = []
+    # 1. Directory of current executable or script
+    if getattr(sys, 'frozen', False):
+        candidates.append(os.path.dirname(sys.executable))
+    candidates.append(os.getcwd())
+    candidates.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+    # 2. User Downloads folder
+    downloads = os.path.expanduser("~/Downloads")
+    candidates.append(downloads)
+    # 3. Temp directory
+    candidates.append(tempfile.gettempdir())
+
+    for folder in candidates:
+        if not os.path.exists(folder):
+            continue
+        try:
+            for f in os.listdir(folder):
+                lf = f.lower()
+                if lf.startswith("yandex_music") and lf.endswith(".exe"):
+                    full_path = os.path.join(folder, f)
+                    if os.path.isfile(full_path) and os.path.getsize(full_path) > 40 * 1024 * 1024:
+                        return full_path
+        except Exception:
+            pass
+    return None
+
+def download_file(url, dest_path, progress_callback=None, cancel_event=None):
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) YandexMusicModInstaller"})
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        total_size = int(resp.headers.get("content-length", 0))
+        downloaded = 0
+        chunk_size = 256 * 1024  # 256 KB
+        with open(dest_path, "wb") as f:
+            while True:
+                if cancel_event and cancel_event.is_set():
+                    raise InterruptedError("Загрузка отменена")
+                chunk = resp.read(chunk_size)
+                if not chunk:
+                    break
+                f.write(chunk)
+                downloaded += len(chunk)
+                if progress_callback:
+                    progress_callback(downloaded, total_size)
+
+def install_official_yandex_music(installer_path, log_callback=print):
+    log_callback(f"[+] Запуск оригинального установщика в тихом режиме: {os.path.basename(installer_path)}...")
+    kill_yandex_music()
+    proc = subprocess.Popen([installer_path, "/S"])
+    try:
+        proc.wait(timeout=60)
+    except subprocess.TimeoutExpired:
+        log_callback("[!] Ожидание завершения распаковки...")
+
+    # Wait for app.asar to appear in destination
+    app_dir = find_yandex_music_dir()
+    asar_path = os.path.join(app_dir, "resources", "app.asar")
+    for _ in range(35):
+        if os.path.exists(asar_path) and os.path.getsize(asar_path) > 10 * 1024 * 1024:
+            break
+        time.sleep(1)
+
+    time.sleep(2)
+    kill_yandex_music()
+
+    if not os.path.exists(asar_path):
+        raise RuntimeError("Установка завершена, но архив resources/app.asar не был создан. Проверьте права доступа.")
+
+    log_callback(f"[+] Официальная Яндекс Музыка успешно установлена в: {app_dir}")
+    return app_dir
 
 def kill_yandex_music():
     try:
@@ -278,12 +360,12 @@ def launch_app(app_dir):
             return True
     return False
 
-# Modern Frosted Dark GUI
+# Modern Frosted Dark GUI with Auto-Download & All-in-One Setup
 class InstallerGUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("Яндекс Музыка Мод — Установщик & Лаунчер")
-        self.root.geometry("640x510")
+        self.root.title("Яндекс Музыка Мод — Установщик «Всё-в-одном»")
+        self.root.geometry("660x540")
         self.root.resizable(False, False)
         self.root.configure(bg="#0f1117")
 
@@ -296,7 +378,10 @@ class InstallerGUI:
             except Exception:
                 pass
 
+        self.progress_var = tk.DoubleVar(value=0)
+        self.status_var = tk.StringVar(value="Проверка состояния...")
         self.setup_ui()
+        self.check_installation_status()
 
     def setup_ui(self):
         # Header frame
@@ -307,39 +392,51 @@ class InstallerGUI:
         title = tk.Label(header, text="ЯНДЕКС МУЗЫКА МОД", font=("Segoe UI", 16, "bold"), fg="#ffffff", bg="#161922")
         title.pack(anchor="w", padx=24, pady=(16, 2))
 
-        sub = tk.Label(header, text="Игровой HUD-оверлей • Караоке • Discord RPC • Кастомные шрифты • Темное стекло",
+        sub = tk.Label(header, text="Установка в 1 клик • Автоскачивание • Игровой HUD • Караоке • Discord RPC • Шрифты",
                        font=("Segoe UI", 9), fg="#94a3b8", bg="#161922")
         sub.pack(anchor="w", padx=24)
 
         # Body container
         body = tk.Frame(self.root, bg="#0f1117")
-        body.pack(fill=tk.BOTH, expand=True, padx=24, pady=18)
+        body.pack(fill=tk.BOTH, expand=True, padx=24, pady=16)
 
         # Path selector
-        path_label = tk.Label(body, text="Папка с установленной Яндекс Музыкой:", font=("Segoe UI", 9, "bold"),
+        path_label = tk.Label(body, text="Папка с Яндекс Музыкой:", font=("Segoe UI", 9, "bold"),
                               fg="#cbd5e1", bg="#0f1117")
         path_label.pack(anchor="w", pady=(0, 4))
 
         path_row = tk.Frame(body, bg="#0f1117")
-        path_row.pack(fill=tk.X, pady=(0, 14))
+        path_row.pack(fill=tk.X, pady=(0, 8))
 
         self.path_var = tk.StringVar(value=find_yandex_music_dir())
         self.path_entry = tk.Entry(path_row, textvariable=self.path_var, font=("Consolas", 9), bg="#1e2230",
                                    fg="#f1f5f9", insertbackground="#fff", relief=tk.FLAT, bd=6)
-        self.path_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, ipady=4)
+        self.path_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, ipady=3)
 
         browse_btn = tk.Button(path_row, text="Обзор...", font=("Segoe UI", 9), bg="#334155", fg="#ffffff",
                                activebackground="#475569", activeforeground="#ffffff", relief=tk.FLAT,
                                cursor="hand2", padx=12, command=self.on_browse)
         browse_btn.pack(side=tk.RIGHT, padx=(8, 0))
 
+        # Status Label (dynamic detection)
+        self.status_label = tk.Label(body, textvariable=self.status_var, font=("Segoe UI", 9, "bold"),
+                                     fg="#38bdf8", bg="#0f1117")
+        self.status_label.pack(anchor="w", pady=(0, 6))
+
+        # Progress bar
+        style = ttk.Style()
+        style.theme_use('default')
+        style.configure("Custom.Horizontal.TProgressbar", background="#8b5cf6", troughcolor="#1e2230", bordercolor="#0f1117", lightcolor="#8b5cf6", darkcolor="#8b5cf6")
+        self.progress_bar = ttk.Progressbar(body, style="Custom.Horizontal.TProgressbar", variable=self.progress_var, maximum=100)
+        self.progress_bar.pack(fill=tk.X, pady=(0, 10))
+
         # Log console
         log_label = tk.Label(body, text="Журнал установки:", font=("Segoe UI", 9, "bold"), fg="#cbd5e1", bg="#0f1117")
         log_label.pack(anchor="w", pady=(0, 4))
 
-        self.log_text = tk.Text(body, height=10, bg="#131620", fg="#38bdf8", insertbackground="#fff",
+        self.log_text = tk.Text(body, height=9, bg="#131620", fg="#38bdf8", insertbackground="#fff",
                                 font=("Consolas", 8), relief=tk.FLAT, bd=8, state=tk.DISABLED)
-        self.log_text.pack(fill=tk.BOTH, expand=True, pady=(0, 14))
+        self.log_text.pack(fill=tk.BOTH, expand=True, pady=(0, 12))
 
         # Button row
         btn_row = tk.Frame(body, bg="#0f1117")
@@ -355,8 +452,6 @@ class InstallerGUI:
                                      relief=tk.FLAT, cursor="hand2", pady=8, padx=14, command=self.start_restore)
         self.restore_btn.pack(side=tk.RIGHT)
 
-        self.log("Готов к установке. Нажмите «Установить мод и запустить».")
-
     def log(self, message):
         self.log_text.config(state=tk.NORMAL)
         self.log_text.insert(tk.END, message + "\n")
@@ -367,6 +462,24 @@ class InstallerGUI:
         folder = filedialog.askdirectory(initialdir=self.path_var.get(), title="Выберите папку с Яндекс Музыкой")
         if folder:
             self.path_var.set(folder)
+            self.check_installation_status()
+
+    def check_installation_status(self):
+        app_dir = self.path_var.get().strip()
+        if is_yandex_music_installed(app_dir):
+            self.status_var.set("✔ Найдена установленная Яндекс Музыка (готов к внедрению мода)")
+            self.status_label.config(fg="#4ade80")
+            self.install_btn.config(text="▶ Установить мод и запустить")
+        else:
+            local = find_local_installer()
+            if local:
+                self.status_var.set(f"ℹ Найден локальный инсталлятор в Загрузках: {os.path.basename(local)}")
+                self.status_label.config(fg="#38bdf8")
+                self.install_btn.config(text="⬇ Установить Яндекс Музыку с модом в 1 клик")
+            else:
+                self.status_var.set("ℹ Яндекс Музыка не найдена — будет скачана и установлена официальная версия")
+                self.status_label.config(fg="#38bdf8")
+                self.install_btn.config(text="⬇ Скачать Яндекс Музыку и установить с модом")
 
     def set_buttons_state(self, enabled):
         state = tk.NORMAL if enabled else tk.DISABLED
@@ -375,26 +488,70 @@ class InstallerGUI:
 
     def start_install(self):
         app_dir = self.path_var.get().strip()
-        if not os.path.exists(os.path.join(app_dir, "resources", "app.asar")):
-            messagebox.showerror("Ошибка", f"В папке {app_dir} не найден файл resources/app.asar!\nПожалуйста, укажите правильную папку с установленной Яндекс Музыкой.")
-            return
-
         self.set_buttons_state(False)
+        self.progress_var.set(0)
         self.log_text.config(state=tk.NORMAL)
         self.log_text.delete("1.0", tk.END)
         self.log_text.config(state=tk.DISABLED)
 
         def worker():
             try:
+                # 1. Check if Yandex Music is installed
+                if not is_yandex_music_installed(app_dir):
+                    self.log("[*] Яндекс Музыка не обнаружена в указанной папке.")
+                    local_installer = find_local_installer()
+                    installer_path = local_installer
+
+                    if installer_path:
+                        self.log(f"[+] Найден готовый установщик: {installer_path}")
+                        self.progress_var.set(20)
+                    else:
+                        self.log("[+] Скачивание чистого официального дистрибутива Яндекс Музыки (5.124.1)...")
+                        temp_installer = os.path.join(tempfile.gettempdir(), "Yandex_Music_x64_5.124.1.exe")
+
+                        last_reported = [0]
+                        def on_progress(downloaded, total):
+                            if total > 0:
+                                pct = (downloaded / total) * 100
+                                self.progress_var.set(pct * 0.4)
+                                mb_done = downloaded / (1024 * 1024)
+                                mb_total = total / (1024 * 1024)
+                                if int(pct) >= last_reported[0] + 10:
+                                    last_reported[0] = int(pct)
+                                    self.root.after(0, lambda: self.log(f"   Загрузка: {mb_done:.1f} МБ из {mb_total:.1f} МБ ({int(pct)}%)..."))
+
+                        try:
+                            download_file(OFFICIAL_DOWNLOAD_URL, temp_installer, on_progress)
+                        except Exception as dl_err:
+                            self.log(f"[!] Ошибка основного сервера ({dl_err}), скачиваем из резервного зеркала...")
+                            download_file(FALLBACK_DOWNLOAD_URL, temp_installer, on_progress)
+
+                        installer_path = temp_installer
+                        self.log("[+] Загрузка официального дистрибутива завершена.")
+
+                    self.progress_var.set(45)
+                    self.log("[+] Установка официальной Яндекс Музыки...")
+                    installed_dir = install_official_yandex_music(installer_path, self.log)
+                    app_dir = installed_dir
+                    self.root.after(0, lambda: self.path_var.set(app_dir))
+                    self.progress_var.set(65)
+
+                # 2. Perform mod injection
+                self.progress_var.set(70)
                 perform_install(app_dir, self.log)
-                self.log("[+] Запуск обновленной Яндекс Музыки...")
+                self.progress_var.set(95)
+
+                self.log("[+] Запуск Яндекс Музыки с модом...")
                 launch_app(app_dir)
-                messagebox.showinfo("Успех", "Мод успешно установлен!\nЯндекс Музыка запущена.")
+                self.progress_var.set(100)
+                self.root.after(0, self.check_installation_status)
+                messagebox.showinfo("Успех", "Яндекс Музыка успешно установлена и пропатчена модом!\nПриятного прослушивания!")
             except Exception as e:
-                self.log(f"[!] Ошибка установки: {e}")
-                messagebox.showerror("Ошибка", f"Произошла ошибка при установке мода:\n{e}")
+                self.log(f"[!] Ошибка: {e}")
+                messagebox.showerror("Ошибка", f"Произошла ошибка при установке:\n{e}")
             finally:
                 self.set_buttons_state(True)
+                self.root.after(0, self.check_installation_status)
 
         threading.Thread(target=worker, daemon=True).start()
 
@@ -423,6 +580,14 @@ class InstallerGUI:
 def main():
     if "--silent" in sys.argv or "--cli" in sys.argv:
         app_dir = sys.argv[2] if len(sys.argv) > 2 and not sys.argv[2].startswith("-") else find_yandex_music_dir()
+        if not is_yandex_music_installed(app_dir) and "--restore" not in sys.argv:
+            local = find_local_installer()
+            if not local:
+                temp_inst = os.path.join(tempfile.gettempdir(), "Yandex_Music_x64_5.124.1.exe")
+                download_file(OFFICIAL_DOWNLOAD_URL, temp_inst)
+                local = temp_inst
+            app_dir = install_official_yandex_music(local, print)
+
         if "--restore" in sys.argv:
             perform_restore(app_dir, print)
         else:
