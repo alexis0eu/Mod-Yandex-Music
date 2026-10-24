@@ -234,6 +234,21 @@ try {
 
         print(f"[+] Injected mod tags into {injected_html_count} HTML files.")
 
+        # 11b. Patch Next.js chunk to permanently disable top ad banner
+        print("[+] Patching Top Advert Banner in Next.js chunks...")
+        chunks_dir = os.path.join(staging_dir, "app", "_next", "static", "chunks")
+        if os.path.exists(chunks_dir):
+            for file in os.listdir(chunks_dir):
+                if file.endswith(".js"):
+                    chunk_path = os.path.join(chunks_dir, file)
+                    with open(chunk_path, "r", encoding="utf-8") as f:
+                        c = f.read()
+                    if "b=(!u.isAuthorized||v.isFreeWebUser)&&h.isVisible" in c:
+                        c = c.replace("b=(!u.isAuthorized||v.isFreeWebUser)&&h.isVisible", "b=!1&&h.isVisible")
+                        with open(chunk_path, "w", encoding="utf-8") as f:
+                            f.write(c)
+                        print(f"[+] Permanently disabled Top Advert Banner in {file}!")
+
         # 12. Repack staging directory into target ASAR
         new_asar_tmp = asar_path + ".tmp"
         print(f"[+] Repacking ASAR to {new_asar_tmp}...")

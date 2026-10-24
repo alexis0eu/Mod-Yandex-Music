@@ -215,6 +215,19 @@ def perform_install(app_dir, log_callback=print):
                         with open(html_file, "w", encoding="utf-8") as f:
                             f.write(html_content)
 
+        # Patch Next.js chunk to permanently disable top ad banner
+        chunks_dir = os.path.join(staging_dir, "app", "_next", "static", "chunks")
+        if os.path.exists(chunks_dir):
+            for file in os.listdir(chunks_dir):
+                if file.endswith(".js"):
+                    chunk_path = os.path.join(chunks_dir, file)
+                    with open(chunk_path, "r", encoding="utf-8") as f:
+                        c = f.read()
+                    if "b=(!u.isAuthorized||v.isFreeWebUser)&&h.isVisible" in c:
+                        c = c.replace("b=(!u.isAuthorized||v.isFreeWebUser)&&h.isVisible", "b=!1&&h.isVisible")
+                        with open(chunk_path, "w", encoding="utf-8") as f:
+                            f.write(c)
+
         # Pack ASAR
         log_callback("[5/6] Сборка оптимизированного архива app.asar...")
         new_asar_tmp = asar_path + ".tmp"

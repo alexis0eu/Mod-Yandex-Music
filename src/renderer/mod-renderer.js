@@ -220,17 +220,22 @@
       });
     }
 
-    // 1. Account Info & hasPlus Unlock
+    // 1. Account Info & hasPlus Unlock (Plus + Free Web User blocker)
     if (url.includes("/account/about") || url.includes("/account/status")) {
       try {
         const res = await originalFetch.apply(this, args);
         if (res.ok) {
           const data = await res.json();
           data.hasPlus = true;
+          data.isFreeWebUser = false;
+          data.freeAccess = false;
           if (data.result) {
             data.result.hasPlus = true;
+            data.result.isFreeWebUser = false;
+            data.result.freeAccess = false;
+            if (data.result.plus) data.result.plus.hasPlus = true;
           }
-          console.log("[PlusUnlocker] Injected hasPlus = true into account data");
+          console.log("[PlusUnlocker] Injected hasPlus = true and suppressed free web flags");
           return new Response(JSON.stringify(data), {
             status: 200,
             headers: { "Content-Type": "application/json" },
@@ -2139,7 +2144,33 @@
       console.error("[YandexMusicMod] Error observing player:", e);
     }
 
-    console.log("[YandexMusicMod] Mod initialized successfully!");
+    // Continuous Top Banner Eliminator
+  function killTopBanner() {
+    try {
+      const root = document.querySelector('div[class*="WithTopBanner_root"]');
+      if (root) {
+        root.style.setProperty("display", "block", "important");
+        root.style.setProperty("grid-template", "none", "important");
+        root.style.setProperty("height", "100vh", "important");
+        root.style.setProperty("max-height", "100vh", "important");
+        root.style.setProperty("overflow", "hidden", "important");
+
+        for (const child of Array.from(root.children)) {
+          if (!child.className.includes("WithTopBanner_content")) {
+            child.remove();
+          } else {
+            child.style.setProperty("height", "100vh", "important");
+            child.style.setProperty("max-height", "100vh", "important");
+            child.style.setProperty("min-height", "100vh", "important");
+          }
+        }
+      }
+    } catch (e) {}
+  }
+  setInterval(killTopBanner, 300);
+  killTopBanner();
+
+  console.log("[YandexMusicMod] Mod initialized successfully!");
   }
 
   if (document.readyState === "loading") {
