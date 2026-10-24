@@ -59,19 +59,24 @@
 
 ## 📸 Скриншоты мода
 
-### 🎮 Игровой HUD-оверлей поверх экрана:
+### 🎮 Игровой HUD-оверлей поверх игр и окон (`Ctrl + Shift + O`):
 <p align="center">
-  <img src="assets/hud-overlay.png" alt="Gaming HUD Overlay" width="600" />
+  <img src="assets/hud-overlay.png" alt="Gaming HUD Overlay" width="550" />
 </p>
 
-### 🎤 Плавающее синхронное Караоке:
+### 🎤 Плавающее синхронное Караоке с подсветкой строк (`Ctrl + Shift + L`):
 <p align="center">
   <img src="assets/karaoke.png" alt="Floating Karaoke" width="700" />
 </p>
 
-### 💎 Меню настроек мода в стиле темного стекла:
+### 💎 Меню настроек мода — Матовое темное стекло (Modern Glass):
 <p align="center">
-  <img src="assets/frosted-menu.png" alt="Frosted Dark Glass Settings" width="450" />
+  <img src="assets/frosted-menu.png" alt="Frosted Dark Glass Settings" width="650" />
+</p>
+
+### 🔤 Кастомные шрифты (Terraria, Minecraft, JetBrains Mono и др.):
+<p align="center">
+  <img src="assets/fonts-menu.png" alt="Custom Fonts Settings" width="650" />
 </p>
 
 ---
