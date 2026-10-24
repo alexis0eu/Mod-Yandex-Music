@@ -27,3 +27,10 @@ Thumbs.db
 build/
 *.spec
 dist/
+
+# NSIS and local binary tools
+tools/nsis/
+tools/*.exe
+tools/*.7z
+tools/*.zip
+
