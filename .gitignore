@@ -22,3 +22,8 @@ app.asar*
 Thumbs.db
 .vscode/
 .idea/
+
+# PyInstaller build artifacts
+build/
+*.spec
+dist/
