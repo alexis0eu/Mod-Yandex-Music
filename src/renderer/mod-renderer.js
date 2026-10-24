@@ -17,8 +17,14 @@
 
   const nuke = () => {
     try {
-      const splashes = document.querySelectorAll('div[class*="SplashScreen_root"], .SplashScreen_root__3jzFk');
+      const splashes = document.querySelectorAll('div[class*="SplashScreen_root"], .SplashScreen_root__3jzFk, div[class*="WithTopBanner_banner"]');
       splashes.forEach(hideElement);
+      const topRoots = document.querySelectorAll('div[class*="WithTopBanner_root"]');
+      topRoots.forEach(node => {
+        node.style.setProperty("display", "block", "important");
+        node.style.setProperty("grid-template", "none", "important");
+        node.style.setProperty("height", "100vh", "important");
+      });
     } catch (e) {}
   };
 

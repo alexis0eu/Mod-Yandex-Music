@@ -179,12 +179,51 @@ function initModMain() {
     });
   }
 
+  let mainWindow = null;
+
+  function trackMainWindow(win) {
+    if (!win || win.isDestroyed()) return;
+    if (win === overlayWindow || win === karaokeWindow) return;
+
+    mainWindow = win;
+
+    win.on("closed", () => {
+      if (mainWindow === win) {
+        mainWindow = null;
+      }
+      // Destroy background HUD windows so no hidden windows keep the process alive
+      if (overlayWindow && !overlayWindow.isDestroyed()) {
+        try { overlayWindow.destroy(); } catch (e) {}
+        overlayWindow = null;
+      }
+      if (karaokeWindow && !karaokeWindow.isDestroyed()) {
+        try { karaokeWindow.destroy(); } catch (e) {}
+        karaokeWindow = null;
+      }
+      app.quit();
+    });
+  }
+
   // Attach to existing windows immediately
-  BrowserWindow.getAllWindows().forEach(attachToWindow);
+  BrowserWindow.getAllWindows().forEach((win) => {
+    attachToWindow(win);
+    trackMainWindow(win);
+  });
 
   // Attach to future windows
   app.on("browser-window-created", (_ev, win) => {
     attachToWindow(win);
+    trackMainWindow(win);
+  });
+
+  // Handle second instance launch: bring main window to front
+  app.on("second-instance", () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.show();
+      mainWindow.setSkipTaskbar(false);
+      mainWindow.focus();
+    }
   });
 
   // 4. Register Global Shortcuts when App is ready

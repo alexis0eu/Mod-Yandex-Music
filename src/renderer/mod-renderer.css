@@ -732,3 +732,40 @@ div[class*="PlusBadge_"],
 div[class*="GetPlus_"] {
   display: none !important;
 }
+
+
+/* === FIX: PERMANENTLY PREVENT TOP BANNER SPLIT LAYOUT === */
+div[class*="WithTopBanner_root"] {
+  display: block !important;
+  grid-template: none !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow: hidden !important;
+}
+
+div[class*="WithTopBanner_banner"],
+div[class*="WithTopBanner_banner_canShow"],
+div[class*="WithTopBanner_banner_hasShown"] {
+  display: none !important;
+  height: 0 !important;
+  max-height: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+div[class*="WithTopBanner_content"] {
+  height: 100vh !important;
+  max-height: 100vh !important;
+  min-height: 100vh !important;
+  overflow: hidden !important;
+}
+
+div[class*="CommonLayout_root"],
+div[class*="DefaultLayout_root"] {
+  height: 100vh !important;
+  max-height: 100vh !important;
+}
