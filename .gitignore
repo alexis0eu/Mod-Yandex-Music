@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+.npm/
+
+# Agent scratch & logs
+.agents/
+test_*.txt
+test_*.png
+*.tmp
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Local backups & ASAR dumps
+*.asar
+*.asar.bak
+app.asar*
+
+# OS / Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
