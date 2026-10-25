@@ -1072,7 +1072,7 @@
               <img src="${MOD_LOGO_ICON_B64}" width="26" height="26" class="ym-header-logo-img" alt="Logo"/>
             </div>
             <div class="ym-modal-title">Настройки Мода</div>
-            <div class="ym-modal-version">v1.2.1 (YM 5.124.1)</div>
+            <div class="ym-modal-version">v1.2.2 (YM 5.124.1)</div>
           </div>
           <button class="ym-modal-close" id="ym-mod-close-btn" title="Закрыть (Esc)">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -2103,7 +2103,7 @@
             <img src="${MOD_LOGO_ICON_B64}" class="ym-mod-custom-logo" width="28" height="28" alt="Logo"/>
           </div>
           <span class="ym-mod-btn-text">Настройки Мода</span>
-          <span class="ym-mod-ver-tag">v1.2.1</span>
+          <span class="ym-mod-ver-tag">v1.2.2</span>
         `;
         btn.addEventListener("click", (e) => {
           e.preventDefault();
