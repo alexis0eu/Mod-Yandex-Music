@@ -41,8 +41,8 @@ def build_installer():
 
     print(f"[+] Staged files count: {sum(len(f) for _, _, f in os.walk(staging_dir))}")
 
-    print(f"[+] Compiling installer with NSIS: {nsis_exe}...")
-    proc = subprocess.run([nsis_exe, nsi_script], cwd=os.path.join(repo_root, "tools"), capture_output=True)
+    print(f"[+] Compiling installer with NSIS: {nsis_exe} (/INPUTCHARSET UTF8)...")
+    proc = subprocess.run([nsis_exe, "/INPUTCHARSET", "UTF8", nsi_script], cwd=os.path.join(repo_root, "tools"), capture_output=True)
     try:
         print(proc.stdout.decode("utf-8", errors="replace"))
     except Exception:

@@ -1835,6 +1835,84 @@
       });
     }
 
+    if (optGlassBlur) {
+      optGlassBlur.addEventListener("change", () => {
+        saveSetting("design/glassBlur", optGlassBlur.value);
+        applyTheme(modSettings["custom-themes/accent"] || "#8b5cf6", true);
+        showToast("Интенсивность матового стекла обновлена");
+      });
+    }
+
+    if (optCardHover) {
+      optCardHover.addEventListener("change", () => {
+        saveSetting("design/cardHoverFx", optCardHover.checked);
+        applyTheme(modSettings["custom-themes/accent"] || "#8b5cf6", true);
+      });
+    }
+
+    if (optPlayerGlow) {
+      optPlayerGlow.addEventListener("change", () => {
+        saveSetting("design/playerGlow", optPlayerGlow.checked);
+        applyTheme(modSettings["custom-themes/accent"] || "#8b5cf6", true);
+      });
+    }
+
+    if (optGlowProgress) {
+      optGlowProgress.addEventListener("change", () => {
+        saveSetting("design/glowProgress", optGlowProgress.checked);
+        applyTheme(modSettings["custom-themes/accent"] || "#8b5cf6", true);
+      });
+    }
+
+    if (optSmoothTransitions) {
+      optSmoothTransitions.addEventListener("change", () => {
+        saveSetting("design/smoothTransitions", optSmoothTransitions.checked);
+        applyTheme(modSettings["custom-themes/accent"] || "#8b5cf6", true);
+      });
+    }
+
+    if (optHudPureShadow) {
+      optHudPureShadow.addEventListener("change", () => {
+        saveSetting("overlay/pureShadow", optHudPureShadow.checked);
+        showToast(optHudPureShadow.checked ? "Чистые тени HUD включены" : "Чистые тени HUD выключены");
+      });
+    }
+
+    if (optHudShowLyrics) {
+      optHudShowLyrics.addEventListener("change", () => {
+        saveSetting("overlay/showLyrics", optHudShowLyrics.checked);
+      });
+    }
+
+    // UI Cleaner listeners
+    const cleanerBinds = [
+      { el: optCleanerConcerts, key: "cleaner/hideConcerts" },
+      { el: optCleanerKids, key: "cleaner/hideKids" },
+      { el: optCleanerPodcasts, key: "cleaner/hidePodcasts" },
+      { el: optCleanerTrends, key: "cleaner/hideTrends" },
+      { el: optCleanerRadio, key: "cleaner/hideRadio" },
+      { el: optCleanerBanners, key: "cleaner/hideBanners" },
+      { el: optCleanerMobile, key: "cleaner/hideMobileApp" },
+      { el: optCleanerDonates, key: "cleaner/hideDonates" },
+      { el: optCleanerTickets, key: "cleaner/hideTickets" },
+      { el: optCleanerTrailers, key: "cleaner/hideTrailers" },
+      { el: optCleanerDislike, key: "cleaner/hideDislike" },
+      { el: optCleanerQueue, key: "cleaner/hideQueue" },
+      { el: optCleanerFullscreen, key: "cleaner/hideFullscreen" },
+      { el: optCleanerQuality, key: "cleaner/hideQuality" },
+      { el: optCleanerPrev, key: "cleaner/hidePrev" },
+      { el: optCleanerLyrics, key: "cleaner/hideLyrics" }
+    ];
+
+    cleanerBinds.forEach(({ el, key }) => {
+      if (el) {
+        el.addEventListener("change", () => {
+          saveSetting(key, el.checked);
+          applyUiCleaner();
+        });
+      }
+    });
+
     if (optFontEnabled) {
       optFontEnabled.addEventListener("change", () => {
         saveSetting("font-changer/enabled", optFontEnabled.checked);

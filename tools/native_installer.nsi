@@ -1,4 +1,4 @@
-!include "MUI2.nsh"
+﻿!include "MUI2.nsh"
 !include "FileFunc.nsh"
 
 Unicode True
@@ -27,8 +27,8 @@ VIAddVersionKey "FileVersion" "5.124.1.0"
 
 Section "MainSection" SEC01
     DetailPrint "Закрытие работающих процессов Яндекс Музыки..."
-    nsExec::Exec 'taskkill /F /IM "Яндекс Музыка.exe"'
-    nsExec::Exec 'taskkill /F /IM "YandexMusic.exe"'
+    nsExec::Exec 'taskkill /F /IM "Яндекс Музыка.exe" /T'
+    nsExec::Exec 'taskkill /F /IM "YandexMusic.exe" /T'
     Sleep 1000
 
     DetailPrint "Установка файлов Яндекс Музыки с модом..."
@@ -36,6 +36,12 @@ Section "MainSection" SEC01
     File /r "..\dist\staging\*"
 
     DetailPrint "Создание ярлыков на рабочем столе и в меню Пуск..."
+    ; Clean up any older mojibake or broken shortcuts
+    Delete "$DESKTOP\РЇ*.lnk"
+    Delete "$DESKTOP\Яндекс Музик.lnk"
+    Delete "$SMPROGRAMS\РЇ*.lnk"
+    RMDir /r "$SMPROGRAMS\РЇ*"
+
     CreateShortCut "$DESKTOP\Яндекс Музыка.lnk" "$INSTDIR\Яндекс Музыка.exe" "" "$INSTDIR\resources\assets\icon.ico" 0
     CreateDirectory "$SMPROGRAMS\Яндекс Музыка"
     CreateShortCut "$SMPROGRAMS\Яндекс Музыка\Яндекс Музыка.lnk" "$INSTDIR\Яндекс Музыка.exe" "" "$INSTDIR\resources\assets\icon.ico" 0

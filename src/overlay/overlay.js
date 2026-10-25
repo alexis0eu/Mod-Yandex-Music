@@ -556,6 +556,10 @@ function initOverlay() {
       } else if (key === "overlay/clickThrough") {
         isGhostMode = !!value;
         updateGhostModeUI();
+      } else if (key === "overlay/showLyrics") {
+        if (overlayLyricsContainer) {
+          overlayLyricsContainer.style.display = value === false ? "none" : "";
+        }
       }
     });
   }
@@ -578,6 +582,15 @@ function initOverlay() {
       .then((val) => {
         isGhostMode = !!val;
         updateGhostModeUI();
+      })
+      .catch(() => {});
+
+    window.overlayApi
+      .getStorageValue("overlay/showLyrics")
+      .then((val) => {
+        if (overlayLyricsContainer && val === false) {
+          overlayLyricsContainer.style.display = "none";
+        }
       })
       .catch(() => {});
   }
