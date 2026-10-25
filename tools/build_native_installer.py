@@ -56,18 +56,13 @@ def build_installer():
         sys.exit(1)
 
     target_mod = os.path.join(dist_dir, "Yandex_Music_x64_5.124.1_Mod.exe")
-    target_clean = os.path.join(dist_dir, "Yandex_Music_x64_5.124.1.exe")
 
     if not os.path.isfile(target_mod):
         print(f"[-] Expected output file not found: {target_mod}")
         sys.exit(1)
 
-    print(f"[+] Copying {target_mod} to {target_clean}...")
-    shutil.copy2(target_mod, target_clean)
-
     size_mod = os.path.getsize(target_mod) / (1024 * 1024)
     print(f"[+] Created {target_mod} ({size_mod:.1f} MB)")
-    print(f"[+] Created {target_clean} ({size_mod:.1f} MB)")
 
     print("[+] Cleaning up staging directory...")
     shutil.rmtree(staging_dir, ignore_errors=True)
