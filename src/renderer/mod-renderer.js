@@ -1041,14 +1041,10 @@
         <div class="ym-modal-header">
           <div class="ym-modal-title-wrap">
             <div class="ym-modal-logo">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M9 18V5l12-2v13"></path>
-                <circle cx="6" cy="18" r="3"></circle>
-                <circle cx="18" cy="16" r="3"></circle>
-              </svg>
+              <img src="${MOD_LOGO_ICON_B64}" width="26" height="26" class="ym-header-logo-img" alt="Logo"/>
             </div>
-            <div class="ym-modal-title">Настройки мода</div>
-            <div class="ym-modal-version">v1.2.0 (YM 5.124.1)</div>
+            <div class="ym-modal-title">Настройки Мода</div>
+            <div class="ym-modal-version">v1.2.1 (YM 5.124.1)</div>
           </div>
           <button class="ym-modal-close" id="ym-mod-close-btn" title="Закрыть (Esc)">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -2042,7 +2038,7 @@
     floatBtn.className = "ym-mod-floating-trigger";
     floatBtn.setAttribute("title", "Настройки мода (Ctrl+Shift+S / Ctrl+, / F10)");
     floatBtn.innerHTML = `
-      <span class="ym-float-icon">⚡</span>
+      <img src="${MOD_LOGO_ICON_B64}" class="ym-float-icon-img" width="22" height="22" alt="Logo"/>
       <span class="ym-float-text">Настройки Мода</span>
     `;
 
@@ -2076,21 +2072,10 @@
         btn.setAttribute("title", "Настройки мода (Ctrl+Shift+S / F10)");
         btn.innerHTML = `
           <div class="ym-mod-icon-wrapper">
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" class="ym-mod-custom-logo">
-              <defs>
-                <linearGradient id="ymLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stop-color="#ff3347"/>
-                  <stop offset="50%" stop-color="#ff8800"/>
-                  <stop offset="100%" stop-color="#8b5cf6"/>
-                </linearGradient>
-              </defs>
-              <circle cx="12" cy="12" r="10" stroke="url(#ymLogoGrad)" stroke-width="2.2" stroke-dasharray="5 2.5"/>
-              <path d="M9 8.5v7l6-3.5-6-3.5z" fill="url(#ymLogoGrad)"/>
-              <circle cx="12" cy="12" r="2" fill="#fff"/>
-            </svg>
+            <img src="${MOD_LOGO_ICON_B64}" class="ym-mod-custom-logo" width="28" height="28" alt="Logo"/>
           </div>
           <span class="ym-mod-btn-text">Настройки Мода</span>
-          <span class="ym-mod-ver-tag">v1.2.0</span>
+          <span class="ym-mod-ver-tag">v1.2.1</span>
         `;
         btn.addEventListener("click", (e) => {
           e.preventDefault();

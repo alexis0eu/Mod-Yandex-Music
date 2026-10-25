@@ -240,7 +240,30 @@ body:has(#ym-mod-menu-btn) #ym-mod-floating-trigger {
 }
 
 .ym-mod-custom-logo {
-  filter: drop-shadow(0 0 6px rgba(255, 51, 71, 0.5));
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 8px !important;
+  object-fit: cover !important;
+  filter: drop-shadow(0 2px 8px rgba(139, 92, 246, 0.45));
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ym-mod-menu-btn:hover .ym-mod-custom-logo {
+  transform: scale(1.08);
+}
+
+.ym-header-logo-img {
+  width: 26px !important;
+  height: 26px !important;
+  border-radius: 7px !important;
+  object-fit: cover !important;
+}
+
+.ym-float-icon-img {
+  width: 22px !important;
+  height: 22px !important;
+  border-radius: 6px !important;
+  object-fit: cover !important;
 }
 
 .ym-mod-btn-text {
