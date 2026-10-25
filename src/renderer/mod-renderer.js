@@ -688,32 +688,6 @@
           }
         `;
       }
-      extra += `
-        /* Immunity for AI facts, Words cards, popovers, tooltips and modals */
-        div[class*="WordsCard"],
-        div[class*="WordsBigCard"],
-        div[class*="AiBadge"],
-        div[class*="TextFact"],
-        div[data-test-id*="WORDS_CARD"],
-        div[class*="WordsCard_popoverContent"],
-        div[class*="WordsCardPopover"],
-        div[class*="WordsCardFullscreen"],
-        div[class*="WordsBigCardPanel"] {
-          box-shadow: none !important;
-        }
-        div[class*="WordsCard_popoverContent"],
-        div[class*="WordsCardPopover"],
-        div[class*="WordsCardFullscreen"],
-        div[class*="WordsBigCardPanel"],
-        div[data-test-id="WORDS_CARD_POPOVER_DESKTOP"],
-        div[data-test-id="WORDS_CARD_FULLSCREEN_MODAL"],
-        div[data-test-id*="WORDS_CARD_FEEDBACK"] {
-          transform: none !important;
-        }
-        div[data-test-id="WORDS_CARD_FULLSCREEN_MODAL"] {
-          z-index: 10000 !important;
-        }
-      `;
       if (playerGlow) {
         extra += `
           div[class*="PlayerBarDesktop_root"], footer[class*="PlayerBar_root"] {

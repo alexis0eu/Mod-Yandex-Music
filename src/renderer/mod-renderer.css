@@ -897,32 +897,3 @@ div[class*="FullscreenPlayerMobile_root"] {
     transform: translateY(0);
   }
 }
-
-
-/* === AI FACTS & WORDS CARD PROTECTION === */
-/* Prevent card hover transforms and shadow containment bugs on AI popovers and modals */
-div[class*="WordsCard"],
-div[class*="WordsBigCard"],
-div[class*="AiBadge"],
-div[class*="TextFact"],
-div[data-test-id*="WORDS_CARD"],
-div[class*="WordsCard_popoverContent"],
-div[class*="WordsCardPopover"],
-div[class*="WordsCardFullscreen"],
-div[class*="WordsBigCardPanel"] {
-  box-shadow: none !important;
-}
-
-div[class*="WordsCard_popoverContent"],
-div[class*="WordsCardPopover"],
-div[class*="WordsCardFullscreen"],
-div[class*="WordsBigCardPanel"],
-div[data-test-id="WORDS_CARD_POPOVER_DESKTOP"],
-div[data-test-id="WORDS_CARD_FULLSCREEN_MODAL"],
-div[data-test-id*="WORDS_CARD_FEEDBACK"] {
-  transform: none !important;
-}
-
-div[data-test-id="WORDS_CARD_FULLSCREEN_MODAL"] {
-  z-index: 10000 !important;
-}
