@@ -244,7 +244,7 @@ body:has(#ym-mod-menu-btn) #ym-mod-floating-trigger {
   height: 28px !important;
   border-radius: 8px !important;
   object-fit: cover !important;
-  filter: drop-shadow(0 2px 8px rgba(139, 92, 246, 0.45));
+  filter: drop-shadow(0 2px 8px rgba(255, 51, 71, 0.55));
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
