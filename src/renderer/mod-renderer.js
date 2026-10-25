@@ -428,7 +428,8 @@
     if (existing) existing.remove();
 
     let css = "";
-    // Navigation / Sidebar items (hide anchor and wrapper <li>)
+    
+    // Sidebar Navigation items
     if (modSettings["cleaner/hideConcerts"] || modSettings["custom-themes/hideConcerts"]) {
       css += `
         aside[data-test-id="NAVBAR"] li:has([data-test-id="NAVBAR_NAVIGATION_ITEM_CONCERTS"]),
@@ -459,42 +460,68 @@
       `;
     }
     if (modSettings["cleaner/hideTrends"]) {
-      css += `aside li:has([data-test-id="NAVBAR_NAVIGATION_ITEM_FOR_YOU_AND_TRENDS"]), aside a[href*="/landing"] { display: none !important; }\n`;
-    }
-    if (modSettings["cleaner/hideTrailers"]) {
-      css += `aside a[href*="/trailers"], [data-test-id*="TRAILER"] { display: none !important; }\n`;
+      css += `aside li:has([data-test-id="NAVBAR_NAVIGATION_ITEM_FOR_YOU_AND_TRENDS"]), aside a[href*="/landing"] { display: none !important; }
+`;
     }
     if (modSettings["cleaner/hideRadio"]) {
-      css += `aside a[href*="/radio"] { display: none !important; }\n`;
-    }
-    if (modSettings["cleaner/hideVibe"]) {
-      css += `div[data-test-id="VIBE_BLOCK"], div[class*="VibeBlock"], aside li:has([data-test-id="NAVBAR_NAVIGATION_ITEM_HOME"]) { display: none !important; }\n`;
-    }
-    if (modSettings["cleaner/hideBanners"] !== false) {
-      css += `div[class*="Paywall"], div[class*="Subscription"], div[data-test-id*="PROMO"], div[data-test-id*="PAYWALL"], div[class*="paywall"], div[class*="WithTopBanner_banner_"], div[class*="PromoBanner_"], div[class*="PaywallBanner_"], div[class*="SubscriptionBanner_"], div[data-test-id="NAVBAR_NAVIGATION_ITEM_PLUS"] { display: none !important; }\n`;
+      css += `aside a[href*="/radio"] { display: none !important; }
+`;
     }
 
-    // Player bar items
+    // Ads, Promos & Banners
+    if (modSettings["cleaner/hideBanners"] !== false) {
+      css += `
+        div[class*="Paywall"], div[class*="Subscription"], div[data-test-id*="PROMO"], 
+        div[data-test-id*="PAYWALL"], div[class*="paywall"], div[class*="WithTopBanner_banner_"], 
+        div[class*="PromoBanner_"], div[class*="PaywallBanner_"], div[class*="SubscriptionBanner_"], 
+        div[data-test-id="NAVBAR_NAVIGATION_ITEM_PLUS"] { display: none !important; }
+      `;
+    }
+    if (modSettings["cleaner/hideMobileApp"] !== false) {
+      css += `div[class*="InstallApp"], div[class*="MobileApp"], div[class*="QrCode"], a[href*="desktop#mobile"] { display: none !important; }
+`;
+    }
+    if (modSettings["cleaner/hideDonates"]) {
+      css += `div[class*="Donate"], button[data-test-id*="DONATE"], div[class*="TipsBlock"], a[href*="/support"], div[class*="ArtistSupport_"] { display: none !important; }
+`;
+    }
+    if (modSettings["cleaner/hideTickets"]) {
+      css += `div[class*="Ticket"], a[href*="afisha.yandex.ru"], button[data-test-id*="TICKET"], div[class*="ConcertWidget"] { display: none !important; }
+`;
+    }
+    if (modSettings["cleaner/hideTrailers"]) {
+      css += `aside a[href*="/trailers"], [data-test-id*="TRAILER"], div[class*="VideoBlock"] { display: none !important; }
+`;
+    }
+
+    // Player Bar items
     if (modSettings["cleaner/hideDislike"]) {
-      css += `button[data-test-id="DISLIKE_BUTTON"] { display: none !important; }\n`;
+      css += `button[data-test-id="DISLIKE_BUTTON"] { display: none !important; }
+`;
     }
     if (modSettings["cleaner/hideQueue"]) {
-      css += `button[data-test-id="PLAYERBAR_DESKTOP_PLAY_QUEUE_BUTTON"], button[data-test-id="QUEUE_BUTTON"] { display: none !important; }\n`;
-    }
-    if (modSettings["cleaner/hideLyrics"]) {
-      css += `button[data-test-id="PLAYERBAR_DESKTOP_SYNC_LYRICS_BUTTON"], button[data-test-id*="LYRICS"] { display: none !important; }\n`;
+      css += `button[data-test-id="PLAYERBAR_DESKTOP_PLAY_QUEUE_BUTTON"], button[data-test-id="QUEUE_BUTTON"] { display: none !important; }
+`;
     }
     if (modSettings["cleaner/hideFullscreen"]) {
-      css += `button[data-test-id="FULLSCREEN_PLAYER_BUTTON"] { display: none !important; }\n`;
-    }
-    if (modSettings["cleaner/hidePrev"]) {
-      css += `button[data-test-id="PREVIOUS_TRACK_BUTTON"], button[data-test-id="sonata.PREVIOUS_TRACK_BUTTON"] { display: none !important; }\n`;
+      css += `button[data-test-id="FULLSCREEN_PLAYER_BUTTON"] { display: none !important; }
+`;
     }
     if (modSettings["cleaner/hideQuality"]) {
-      css += `button[data-test-id="SOUND_QUALITY_BUTTON"], button[data-test-id="CONTEXT_MENU_AUDIO_QUALITY_ITEM"] { display: none !important; }\n`;
+      css += `button[data-test-id="SOUND_QUALITY_BUTTON"], button[data-test-id="CONTEXT_MENU_AUDIO_QUALITY_ITEM"] { display: none !important; }
+`;
+    }
+    if (modSettings["cleaner/hidePrev"]) {
+      css += `button[data-test-id="PREVIOUS_TRACK_BUTTON"], button[data-test-id="sonata.PREVIOUS_TRACK_BUTTON"] { display: none !important; }
+`;
+    }
+    if (modSettings["cleaner/hideLyrics"]) {
+      css += `button[data-test-id="PLAYERBAR_DESKTOP_SYNC_LYRICS_BUTTON"], button[data-test-id*="LYRICS"] { display: none !important; }
+`;
     }
     if (modSettings["cleaner/hideVolume"]) {
-      css += `div[data-test-id="VOLUME_CONTROL_CONTAINER"], div[class*="Volume"] { display: none !important; }\n`;
+      css += `div[data-test-id="VOLUME_CONTROL_CONTAINER"], div[class*="Volume"] { display: none !important; }
+`;
     }
 
     if (css.trim()) {
@@ -599,12 +626,71 @@
   }
 
   
-  function applyTheme(accent = "#007acc", enabled = true) {
+  function applyTheme(accent = "#8b5cf6", enabled = true) {
     try {
       const existing = document.getElementById(THEME_STYLESHEET_ID);
       if (existing) existing.remove();
 
       if (!enabled || !accent) return;
+
+      const glassBlur = modSettings["design/glassBlur"] || "medium";
+      const cardHover = modSettings["design/cardHoverFx"] !== false;
+      const playerGlow = modSettings["design/playerGlow"] !== false;
+      const glowProgress = modSettings["design/glowProgress"] !== false;
+      const smoothTransitions = modSettings["design/smoothTransitions"] !== false;
+
+      let blurCss = "backdrop-filter: blur(28px) saturate(180%) !important; -webkit-backdrop-filter: blur(28px) saturate(180%) !important;";
+      if (glassBlur === "off") {
+        blurCss = "backdrop-filter: none !important; -webkit-backdrop-filter: none !important;";
+      } else if (glassBlur === "light") {
+        blurCss = "backdrop-filter: blur(14px) saturate(140%) !important; -webkit-backdrop-filter: blur(14px) saturate(140%) !important;";
+      } else if (glassBlur === "ultra") {
+        blurCss = "backdrop-filter: blur(44px) saturate(220%) !important; -webkit-backdrop-filter: blur(44px) saturate(220%) !important;";
+      }
+
+      let extra = "";
+      if (cardHover) {
+        extra += `
+          div[class*="EntityCard_root"], div[class*="ItemCard_root"], div[data-test-id*="CARD"], div[class*="Track_root"]:hover {
+            transition: transform 0.22s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.22s cubic-bezier(0.2, 0, 0, 1) !important;
+          }
+          div[class*="EntityCard_root"]:hover, div[class*="ItemCard_root"]:hover, div[data-test-id*="CARD"]:hover {
+            transform: translateY(-4px) scale(1.02) !important;
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5), 0 0 16px ${accent}44 !important;
+          }
+        `;
+      }
+      if (playerGlow) {
+        extra += `
+          div[class*="PlayerBarDesktop_root"], footer[class*="PlayerBar_root"] {
+            box-shadow: 0 -4px 30px ${accent}33 !important;
+            border-top: 1px solid rgba(255, 255, 255, 0.12) !important;
+          }
+        `;
+      }
+      if (glowProgress) {
+        extra += `
+          div[class*="ProgressBar_sliderThumb"] {
+            background-color: ${accent} !important;
+            box-shadow: 0 0 10px ${accent} !important;
+          }
+          div[class*="ProgressBar_progress_"] {
+            background-color: ${accent} !important;
+            box-shadow: 0 0 8px ${accent}88 !important;
+          }
+        `;
+      }
+      if (smoothTransitions) {
+        extra += `
+          main, div[class*="DefaultLayout_content"] {
+            animation: ymPageFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+          }
+          @keyframes ymPageFadeIn {
+            from { opacity: 0.85; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+        `;
+      }
 
       const style = document.createElement("style");
       style.id = THEME_STYLESHEET_ID;
@@ -612,11 +698,16 @@
         :root {
           --yandexMusicModAccent: ${accent} !important;
           --accent: ${accent} !important;
-          --accent-glow: ${accent}66 !important;
+          --accent-glow: ${accent}55 !important;
+          --ym-accent: ${accent} !important;
         }
         .ym-mod-btn-icon, .ym-float-icon {
           color: ${accent} !important;
         }
+        .ym-mod-modal, div[class*="NavbarDesktop_root"], div[class*="PlayerBarDesktop_root"] {
+          ${blurCss}
+        }
+        ${extra}
       `;
       (document.head || document.documentElement).appendChild(style);
     } catch (e) {
@@ -957,7 +1048,7 @@
               </svg>
             </div>
             <div class="ym-modal-title">Настройки мода</div>
-            <div class="ym-modal-version">v5.124.1</div>
+            <div class="ym-modal-version">v1.2.0 (YM 5.124.1)</div>
           </div>
           <button class="ym-modal-close" id="ym-mod-close-btn" title="Закрыть (Esc)">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -1092,15 +1183,15 @@
             <!-- TAB 1: APPEARANCE -->
             <div class="ym-tab-pane" id="tab-appearance">
               <div class="ym-card">
-                <div class="ym-card-title">Стиль интерфейса</div>
+                <div class="ym-card-title">Стиль и акцентные цвета</div>
                 <div class="ym-row">
                   <div class="ym-col-info">
                     <span class="ym-label">Режим оформления</span>
                     <span class="ym-desc">Переключение визуальной структуры плеера</span>
                   </div>
                   <select class="ym-select" id="opt-design-mode">
-                    <option value="classic">Классический (Светлый акцент)</option>
                     <option value="modern">Modern Glass (Матовое стекло)</option>
+                    <option value="classic">Классический темный</option>
                     <option value="compact">Компактный (Минимализм)</option>
                   </select>
                 </div>
@@ -1108,23 +1199,86 @@
                 <div class="ym-row">
                   <div class="ym-col-info">
                     <span class="ym-label">Акцентный цвет</span>
-                    <span class="ym-desc">Основной цвет выделения, кнопок и ползунков</span>
+                    <span class="ym-desc">Цвет выделения, кнопок, свечения и ползунков</span>
                   </div>
                   <div class="ym-palette-wrap">
-                    <div class="ym-color-swatch" data-color="#007acc" style="background:#007acc;" title="Синий"></div>
+                    <div class="ym-color-swatch" data-color="#8b5cf6" style="background:#8b5cf6;" title="Киберпанк Фиолетовый"></div>
+                    <div class="ym-color-swatch" data-color="#007acc" style="background:#007acc;" title="Неоновый Синий"></div>
                     <div class="ym-color-swatch" data-color="#fed42b" style="background:#fed42b;" title="Яндекс Жёлтый"></div>
-                    <div class="ym-color-swatch" data-color="#ff3347" style="background:#ff3347;" title="Красный"></div>
-                    <div class="ym-color-swatch" data-color="#10b981" style="background:#10b981;" title="Изумрудный"></div>
-                    <div class="ym-color-swatch" data-color="#8b5cf6" style="background:#8b5cf6;" title="Фиолетовый"></div>
-                    <div class="ym-color-swatch" data-color="#f43f5e" style="background:#f43f5e;" title="Розовый"></div>
-                    <input type="color" class="ym-color-picker" id="opt-custom-color" value="#007acc" title="Свой цвет">
+                    <div class="ym-color-swatch" data-color="#10b981" style="background:#10b981;" title="Изумрудный Неон"></div>
+                    <div class="ym-color-swatch" data-color="#ff7b00" style="background:#ff7b00;" title="Закатный Оранжевый"></div>
+                    <div class="ym-color-swatch" data-color="#ff3347" style="background:#ff3347;" title="Рубиновый Красный"></div>
+                    <div class="ym-color-swatch" data-color="#f43f5e" style="background:#f43f5e;" title="Неоновый Розовый"></div>
+                    <div class="ym-color-swatch" data-color="#e2e8f0" style="background:#e2e8f0;" title="Серебряный Монохром"></div>
+                    <input type="color" class="ym-color-picker" id="opt-custom-color" value="#8b5cf6" title="Свой цвет">
                   </div>
                 </div>
 
                 <div class="ym-row">
                   <div class="ym-col-info">
-                    <span class="ym-label">Отключить анимацию Моей Волны</span>
-                    <span class="ym-desc">Снижает нагрузку на видеокарту и процессор</span>
+                    <span class="ym-label">Размытие стекла (Glassmorphism)</span>
+                    <span class="ym-desc">Интенсивность матового эффекта фона</span>
+                  </div>
+                  <select class="ym-select" id="opt-glass-blur">
+                    <option value="medium">Премиум стекло (28px)</option>
+                    <option value="light">Мягкое стекло (14px)</option>
+                    <option value="ultra">Глубокое матовое (44px)</option>
+                    <option value="off">Без размытия (Выкл)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="ym-card">
+                <div class="ym-card-title">Эффекты и плавные анимации</div>
+
+                <div class="ym-row">
+                  <div class="ym-col-info">
+                    <span class="ym-label">Плавные анимации карточек (Hover FX)</span>
+                    <span class="ym-desc">Мягкий подъем и неоновое свечение треков и альбомов при наведении</span>
+                  </div>
+                  <label class="ym-switch">
+                    <input type="checkbox" id="opt-card-hover">
+                    <span class="ym-slider"></span>
+                  </label>
+                </div>
+
+                <div class="ym-row">
+                  <div class="ym-col-info">
+                    <span class="ym-label">Неоновая подсветка плеера (Ambient Glow)</span>
+                    <span class="ym-desc">Мягкое свечение нижней панели плеера под цвет акцента</span>
+                  </div>
+                  <label class="ym-switch">
+                    <input type="checkbox" id="opt-player-glow">
+                    <span class="ym-slider"></span>
+                  </label>
+                </div>
+
+                <div class="ym-row">
+                  <div class="ym-col-info">
+                    <span class="ym-label">Светящийся прогресс-бар</span>
+                    <span class="ym-desc">Неоновое свечение линии воспроизведения трека</span>
+                  </div>
+                  <label class="ym-switch">
+                    <input type="checkbox" id="opt-glow-progress">
+                    <span class="ym-slider"></span>
+                  </label>
+                </div>
+
+                <div class="ym-row">
+                  <div class="ym-col-info">
+                    <span class="ym-label">Плавные переходы страниц</span>
+                    <span class="ym-desc">60fps анимации переходов между альбомами и плейлистами</span>
+                  </div>
+                  <label class="ym-switch">
+                    <input type="checkbox" id="opt-smooth-transitions">
+                    <span class="ym-slider"></span>
+                  </label>
+                </div>
+
+                <div class="ym-row">
+                  <div class="ym-col-info">
+                    <span class="ym-label">Отключить 3D-анимацию «Моя Волна»</span>
+                    <span class="ym-desc">Снижает нагрузку на видеокарту и экономит ресурсы</span>
                   </div>
                   <label class="ym-switch">
                     <input type="checkbox" id="opt-disable-vibe">
@@ -1145,7 +1299,7 @@
                     <span class="ym-desc">Убирает пункт афиши концертов из панели навигации</span>
                   </div>
                   <label class="ym-switch">
-                    <input type="checkbox" id="opt-hide-concerts">
+                    <input type="checkbox" id="opt-cleaner-concerts">
                     <span class="ym-slider"></span>
                   </label>
                 </div>
@@ -1156,7 +1310,169 @@
                     <span class="ym-desc">Убирает детский раздел из левой панели</span>
                   </div>
                   <label class="ym-switch">
-                    <input type="checkbox" id="opt-hide-kids">
+                    <input type="checkbox" id="opt-cleaner-kids">
+                    <span class="ym-slider"></span>
+                  </label>
+                </div>
+
+                <div class="ym-row">
+                  <div class="ym-col-info">
+                    <span class="ym-label">Скрыть раздел «Подкасты и книги»</span>
+                    <span class="ym-desc">Убирает подкасты, аудиокниги и лекции</span>
+                  </div>
+                  <label class="ym-switch">
+                    <input type="checkbox" id="opt-cleaner-podcasts">
+                    <span class="ym-slider"></span>
+                  </label>
+                </div>
+
+                <div class="ym-row">
+                  <div class="ym-col-info">
+                    <span class="ym-label">Скрыть раздел «Тренды и рекомендации»</span>
+                    <span class="ym-desc">Убирает блок трендов и промо-чартов</span>
+                  </div>
+                  <label class="ym-switch">
+                    <input type="checkbox" id="opt-cleaner-trends">
+                    <span class="ym-slider"></span>
+                  </label>
+                </div>
+
+                <div class="ym-row">
+                  <div class="ym-col-info">
+                    <span class="ym-label">Скрыть раздел «Радио»</span>
+                    <span class="ym-desc">Убирает радиостанции из бокового меню</span>
+                  </div>
+                  <label class="ym-switch">
+                    <input type="checkbox" id="opt-cleaner-radio">
+                    <span class="ym-slider"></span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="ym-card">
+                <div class="ym-card-title">Реклама, баннеры и промо-блоки</div>
+
+                <div class="ym-row">
+                  <div class="ym-col-info">
+                    <span class="ym-label">Скрыть рекламные баннеры и Плюс</span>
+                    <span class="ym-desc">Убирает все промо-баннеры и предложения оформить подписку</span>
+                  </div>
+                  <label class="ym-switch">
+                    <input type="checkbox" id="opt-cleaner-banners">
+                    <span class="ym-slider"></span>
+                  </label>
+                </div>
+
+                <div class="ym-row">
+                  <div class="ym-col-info">
+                    <span class="ym-label">Скрыть блок «Установить на телефон»</span>
+                    <span class="ym-desc">Убирает QR-коды и баннеры мобильного приложения</span>
+                  </div>
+                  <label class="ym-switch">
+                    <input type="checkbox" id="opt-cleaner-mobile">
+                    <span class="ym-slider"></span>
+                  </label>
+                </div>
+
+                <div class="ym-row">
+                  <div class="ym-col-info">
+                    <span class="ym-label">Скрыть «Донаты артисту» (чаевые)</span>
+                    <span class="ym-desc">Убирает кнопки донатов на страницах исполнителей</span>
+                  </div>
+                  <label class="ym-switch">
+                    <input type="checkbox" id="opt-cleaner-donates">
+                    <span class="ym-slider"></span>
+                  </label>
+                </div>
+
+                <div class="ym-row">
+                  <div class="ym-col-info">
+                    <span class="ym-label">Скрыть «Купить билет на концерт»</span>
+                    <span class="ym-desc">Убирает афиши и виджеты покупки билетов у артистов</span>
+                  </div>
+                  <label class="ym-switch">
+                    <input type="checkbox" id="opt-cleaner-tickets">
+                    <span class="ym-slider"></span>
+                  </label>
+                </div>
+
+                <div class="ym-row">
+                  <div class="ym-col-info">
+                    <span class="ym-label">Скрыть видеоклипы и трейлеры</span>
+                    <span class="ym-desc">Убирает блоки видеороликов на страницах треков</span>
+                  </div>
+                  <label class="ym-switch">
+                    <input type="checkbox" id="opt-cleaner-trailers">
+                    <span class="ym-slider"></span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="ym-card">
+                <div class="ym-card-title">Элементы плеера (Нижняя панель)</div>
+
+                <div class="ym-row">
+                  <div class="ym-col-info">
+                    <span class="ym-label">Скрыть кнопку «Дизлайк» (Не нравится)</span>
+                    <span class="ym-desc">Убирает кнопку дизлайка из панели воспроизведения</span>
+                  </div>
+                  <label class="ym-switch">
+                    <input type="checkbox" id="opt-cleaner-dislike">
+                    <span class="ym-slider"></span>
+                  </label>
+                </div>
+
+                <div class="ym-row">
+                  <div class="ym-col-info">
+                    <span class="ym-label">Скрыть кнопку «Очередь воспроизведения»</span>
+                    <span class="ym-desc">Убирает список следующих треков из нижнего бара</span>
+                  </div>
+                  <label class="ym-switch">
+                    <input type="checkbox" id="opt-cleaner-queue">
+                    <span class="ym-slider"></span>
+                  </label>
+                </div>
+
+                <div class="ym-row">
+                  <div class="ym-col-info">
+                    <span class="ym-label">Скрыть кнопку «Полноэкранный режим»</span>
+                    <span class="ym-desc">Убирает иконку перехода на полный экран</span>
+                  </div>
+                  <label class="ym-switch">
+                    <input type="checkbox" id="opt-cleaner-fullscreen">
+                    <span class="ym-slider"></span>
+                  </label>
+                </div>
+
+                <div class="ym-row">
+                  <div class="ym-col-info">
+                    <span class="ym-label">Скрыть кнопку «Качество звука»</span>
+                    <span class="ym-desc">Убирает значок HQ / Lossless из плеера</span>
+                  </div>
+                  <label class="ym-switch">
+                    <input type="checkbox" id="opt-cleaner-quality">
+                    <span class="ym-slider"></span>
+                  </label>
+                </div>
+
+                <div class="ym-row">
+                  <div class="ym-col-info">
+                    <span class="ym-label">Скрыть кнопку «Предыдущий трек»</span>
+                    <span class="ym-desc">Оставляет только кнопки воспроизведения и перехода вперёд</span>
+                  </div>
+                  <label class="ym-switch">
+                    <input type="checkbox" id="opt-cleaner-prev">
+                    <span class="ym-slider"></span>
+                  </label>
+                </div>
+
+                <div class="ym-row">
+                  <div class="ym-col-info">
+                    <span class="ym-label">Скрыть кнопку «Текст песни»</span>
+                    <span class="ym-desc">Убирает штатную кнопку караоке из нижнего плеера</span>
+                  </div>
+                  <label class="ym-switch">
+                    <input type="checkbox" id="opt-cleaner-lyrics">
                     <span class="ym-slider"></span>
                   </label>
                 </div>
@@ -1233,7 +1549,7 @@
 
                 <div class="ym-row">
                   <div class="ym-col-info">
-                    <span class="ym-label">Режим сквозного клика (Ghost)</span>
+                    <span class="ym-label">Режим сквозного клика (Ghost Mode)</span>
                     <span class="ym-desc">Клики проходят сквозь оверлей прямо в окно игры</span>
                   </div>
                   <label class="ym-switch">
@@ -1244,8 +1560,30 @@
 
                 <div class="ym-row">
                   <div class="ym-col-info">
+                    <span class="ym-label">Без цветного ореола (Чистая тень)</span>
+                    <span class="ym-desc">Убирает красные и цветные блики вокруг окна HUD</span>
+                  </div>
+                  <label class="ym-switch">
+                    <input type="checkbox" id="opt-hud-pure-shadow">
+                    <span class="ym-slider"></span>
+                  </label>
+                </div>
+
+                <div class="ym-row">
+                  <div class="ym-col-info">
+                    <span class="ym-label">Строка караоке в HUD</span>
+                    <span class="ym-desc">Отображать бегущую строку текста песни внизу HUD</span>
+                  </div>
+                  <label class="ym-switch">
+                    <input type="checkbox" id="opt-hud-show-lyrics">
+                    <span class="ym-slider"></span>
+                  </label>
+                </div>
+
+                <div class="ym-row">
+                  <div class="ym-col-info">
                     <span class="ym-label">Горячая клавиша скрытия</span>
-                    <span class="ym-desc">Быстро скрыть или показать HUD в любое время</span>
+                    <span class="ym-desc">Быстро скрыть или показать HUD в игре</span>
                   </div>
                   <span class="ym-badge">Ctrl + Shift + O</span>
                 </div>
@@ -1374,23 +1712,53 @@
 
     // Option Binds
     const optDesignMode = document.getElementById("opt-design-mode");
+    const optGlassBlur = document.getElementById("opt-glass-blur");
+    const optCardHover = document.getElementById("opt-card-hover");
+    const optPlayerGlow = document.getElementById("opt-player-glow");
+    const optGlowProgress = document.getElementById("opt-glow-progress");
+    const optSmoothTransitions = document.getElementById("opt-smooth-transitions");
     const optDisableVibe = document.getElementById("opt-disable-vibe");
+    
     const optFontEnabled = document.getElementById("opt-font-enabled");
     const optFontFamily = document.getElementById("opt-font-family");
     const optFontCustom = document.getElementById("opt-font-custom");
+    const previewBox = document.getElementById("font-preview-box");
+
     const optOverlayGhost = document.getElementById("opt-overlay-ghost");
+    const optHudPureShadow = document.getElementById("opt-hud-pure-shadow");
+    const optHudShowLyrics = document.getElementById("opt-hud-show-lyrics");
+
     const optDiscordRpc = document.getElementById("opt-discord-rpc");
     const optAutoQuality = document.getElementById("opt-auto-quality");
     const optUiScale = document.getElementById("opt-ui-scale");
-    const optHideConcerts = document.getElementById("opt-hide-concerts");
-    const optHideKids = document.getElementById("opt-hide-kids");
-    const previewBox = document.getElementById("font-preview-box");
+
+    // Cleaner binds
+    const optCleanerConcerts = document.getElementById("opt-cleaner-concerts");
+    const optCleanerKids = document.getElementById("opt-cleaner-kids");
+    const optCleanerPodcasts = document.getElementById("opt-cleaner-podcasts");
+    const optCleanerTrends = document.getElementById("opt-cleaner-trends");
+    const optCleanerRadio = document.getElementById("opt-cleaner-radio");
+    const optCleanerBanners = document.getElementById("opt-cleaner-banners");
+    const optCleanerMobile = document.getElementById("opt-cleaner-mobile");
+    const optCleanerDonates = document.getElementById("opt-cleaner-donates");
+    const optCleanerTickets = document.getElementById("opt-cleaner-tickets");
+    const optCleanerTrailers = document.getElementById("opt-cleaner-trailers");
+    const optCleanerDislike = document.getElementById("opt-cleaner-dislike");
+    const optCleanerQueue = document.getElementById("opt-cleaner-queue");
+    const optCleanerFullscreen = document.getElementById("opt-cleaner-fullscreen");
+    const optCleanerQuality = document.getElementById("opt-cleaner-quality");
+    const optCleanerPrev = document.getElementById("opt-cleaner-prev");
+    const optCleanerLyrics = document.getElementById("opt-cleaner-lyrics");
 
     // Populate initial values safely
-    if (optDesignMode) optDesignMode.value = modSettings["design/mode"] || "classic";
+    if (optDesignMode) optDesignMode.value = modSettings["design/mode"] || "modern";
+    if (optGlassBlur) optGlassBlur.value = modSettings["design/glassBlur"] || "medium";
+    if (optCardHover) optCardHover.checked = modSettings["design/cardHoverFx"] !== false;
+    if (optPlayerGlow) optPlayerGlow.checked = modSettings["design/playerGlow"] !== false;
+    if (optGlowProgress) optGlowProgress.checked = modSettings["design/glowProgress"] !== false;
+    if (optSmoothTransitions) optSmoothTransitions.checked = modSettings["design/smoothTransitions"] !== false;
     if (optDisableVibe) optDisableVibe.checked = !!modSettings["custom-themes/disableVibeAnimation"];
-    if (optHideConcerts) optHideConcerts.checked = !!modSettings["custom-themes/hideConcerts"];
-    if (optHideKids) optHideKids.checked = !!modSettings["custom-themes/hideKids"];
+
     if (optFontEnabled) optFontEnabled.checked = modSettings["font-changer/enabled"] !== false;
     if (optFontFamily) {
       optFontFamily.value = modSettings["font-changer/savedFont"] || "Terraria";
@@ -1398,10 +1766,32 @@
         previewBox.style.fontFamily = `"${optFontFamily.value}", sans-serif`;
       }
     }
+
     if (optOverlayGhost) optOverlayGhost.checked = !!modSettings["overlay/clickThrough"];
+    if (optHudPureShadow) optHudPureShadow.checked = modSettings["overlay/pureShadow"] !== false;
+    if (optHudShowLyrics) optHudShowLyrics.checked = modSettings["overlay/showLyrics"] !== false;
+
     if (optDiscordRpc) optDiscordRpc.checked = modSettings["discordRPC/enabled"] !== false;
     if (optAutoQuality) optAutoQuality.checked = modSettings["autoQuality/enabled"] !== false;
     if (optUiScale) optUiScale.value = String(modSettings["scale-changer/savedScale"] || "1.0");
+
+    // Cleaner values
+    if (optCleanerConcerts) optCleanerConcerts.checked = !!modSettings["cleaner/hideConcerts"];
+    if (optCleanerKids) optCleanerKids.checked = !!modSettings["cleaner/hideKids"];
+    if (optCleanerPodcasts) optCleanerPodcasts.checked = !!modSettings["cleaner/hidePodcasts"];
+    if (optCleanerTrends) optCleanerTrends.checked = !!modSettings["cleaner/hideTrends"];
+    if (optCleanerRadio) optCleanerRadio.checked = !!modSettings["cleaner/hideRadio"];
+    if (optCleanerBanners) optCleanerBanners.checked = modSettings["cleaner/hideBanners"] !== false;
+    if (optCleanerMobile) optCleanerMobile.checked = modSettings["cleaner/hideMobileApp"] !== false;
+    if (optCleanerDonates) optCleanerDonates.checked = !!modSettings["cleaner/hideDonates"];
+    if (optCleanerTickets) optCleanerTickets.checked = !!modSettings["cleaner/hideTickets"];
+    if (optCleanerTrailers) optCleanerTrailers.checked = !!modSettings["cleaner/hideTrailers"];
+    if (optCleanerDislike) optCleanerDislike.checked = !!modSettings["cleaner/hideDislike"];
+    if (optCleanerQueue) optCleanerQueue.checked = !!modSettings["cleaner/hideQueue"];
+    if (optCleanerFullscreen) optCleanerFullscreen.checked = !!modSettings["cleaner/hideFullscreen"];
+    if (optCleanerQuality) optCleanerQuality.checked = !!modSettings["cleaner/hideQuality"];
+    if (optCleanerPrev) optCleanerPrev.checked = !!modSettings["cleaner/hidePrev"];
+    if (optCleanerLyrics) optCleanerLyrics.checked = !!modSettings["cleaner/hideLyrics"];
 
     // Palette swatches
     const swatches = document.querySelectorAll(".ym-color-swatch");
@@ -1510,20 +1900,6 @@
       });
     }
 
-    if (optHideConcerts) {
-      optHideConcerts.addEventListener("change", () => {
-        saveSetting("custom-themes/hideConcerts", optHideConcerts.checked);
-        applyHiddenMenuItems();
-      });
-    }
-
-    if (optHideKids) {
-      optHideKids.addEventListener("change", () => {
-        saveSetting("custom-themes/hideKids", optHideKids.checked);
-        applyHiddenMenuItems();
-      });
-    }
-
     // Action Buttons
     document.getElementById("btn-reload-plus")?.addEventListener("click", () => {
       window.location.reload();
@@ -1602,13 +1978,11 @@
   }
 
   function injectSidebarButton() {
-    // Permanent floating trigger for 100% fail-proof access
     injectFloatingBadge();
 
     const containerId = "ym-mod-sidebar-container";
     let container = document.getElementById(containerId);
 
-    // Exact Stephanzion / Vzlomhik target selector: User profile container at sidebar bottom
     const targetSelector = 'div[class*="NavbarDesktopUserWidget_userProfileContainer"], aside [data-test-id="USER_PROFILE"], aside [data-test-id="USER_PROFILE_AVATAR_CONTAINER"]';
     const targetElement = document.querySelector(targetSelector);
 
@@ -1616,15 +1990,29 @@
       if (!container) {
         container = document.createElement("div");
         container.id = containerId;
-        container.style.cssText = "display: flex; justify-content: center; width: 100%; box-sizing: border-box; margin: 6px 0; padding: 0 12px;";
+        container.className = "ym-mod-sidebar-container";
 
         const btn = document.createElement("button");
         btn.id = "ym-mod-menu-btn";
         btn.className = "ym-mod-menu-btn";
-        btn.setAttribute("title", "Настройки мода (Ctrl+Shift+S / Ctrl+, / F10)");
+        btn.setAttribute("title", "Настройки мода (Ctrl+Shift+S / F10)");
         btn.innerHTML = `
-          <span class="ym-mod-btn-icon">⚡</span>
+          <div class="ym-mod-icon-wrapper">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" class="ym-mod-custom-logo">
+              <defs>
+                <linearGradient id="ymLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#ff3347"/>
+                  <stop offset="50%" stop-color="#ff8800"/>
+                  <stop offset="100%" stop-color="#8b5cf6"/>
+                </linearGradient>
+              </defs>
+              <circle cx="12" cy="12" r="10" stroke="url(#ymLogoGrad)" stroke-width="2.2" stroke-dasharray="5 2.5"/>
+              <path d="M9 8.5v7l6-3.5-6-3.5z" fill="url(#ymLogoGrad)"/>
+              <circle cx="12" cy="12" r="2" fill="#fff"/>
+            </svg>
+          </div>
           <span class="ym-mod-btn-text">Настройки Мода</span>
+          <span class="ym-mod-ver-tag">v1.2.0</span>
         `;
         btn.addEventListener("click", (e) => {
           e.preventDefault();
@@ -1634,6 +2022,21 @@
 
         container.appendChild(btn);
         targetElement.parentNode.insertBefore(container, targetElement);
+
+        // Sidebar collapse observer
+        const aside = targetElement.closest("aside") || document.querySelector("aside");
+        if (aside && typeof ResizeObserver !== "undefined") {
+          const checkCollapsed = () => {
+            if (aside.offsetWidth < 120) {
+              container.classList.add("ym-sidebar-collapsed");
+            } else {
+              container.classList.remove("ym-sidebar-collapsed");
+            }
+          };
+          const ro = new ResizeObserver(checkCollapsed);
+          ro.observe(aside);
+          checkCollapsed();
+        }
       }
       const floatBtn = document.getElementById("ym-mod-floating-trigger");
       if (floatBtn) floatBtn.style.display = "none";

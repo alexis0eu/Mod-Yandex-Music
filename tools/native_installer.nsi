@@ -9,17 +9,17 @@ OutFile "..\dist\Yandex_Music_x64_5.124.1_Mod.exe"
 InstallDir "$LOCALAPPDATA\Programs\YandexMusic"
 RequestExecutionLevel user
 
-Icon "..\dist\repack\app_unpacked\resources\assets\icon.ico"
+Icon "..\dist\staging\resources\assets\icon.ico"
 
 VIProductVersion "5.124.1.0"
 VIAddVersionKey "ProductName" "Яндекс Музыка"
 VIAddVersionKey "CompanyName" "Яндекс Музыка"
 VIAddVersionKey "LegalCopyright" "Яндекс Музыка"
-VIAddVersionKey "FileDescription" "Яндекс Музыка (с модом)"
+VIAddVersionKey "FileDescription" "Яндекс Музыка v1.2.0 (с модом)"
 VIAddVersionKey "FileVersion" "5.124.1.0"
 
-!define MUI_ICON "..\dist\repack\app_unpacked\resources\assets\icon.ico"
-!define MUI_UNICON "..\dist\repack\app_unpacked\resources\assets\icon.ico"
+!define MUI_ICON "..\dist\staging\resources\assets\icon.ico"
+!define MUI_UNICON "..\dist\staging\resources\assets\icon.ico"
 
 !insertmacro MUI_PAGE_INSTFILES
 
@@ -33,7 +33,7 @@ Section "MainSection" SEC01
 
     DetailPrint "Установка файлов Яндекс Музыки с модом..."
     SetOutPath "$INSTDIR"
-    File /r "..\dist\repack\app_unpacked\*"
+    File /r "..\dist\staging\*"
 
     DetailPrint "Создание ярлыков на рабочем столе и в меню Пуск..."
     CreateShortCut "$DESKTOP\Яндекс Музыка.lnk" "$INSTDIR\Яндекс Музыка.exe" "" "$INSTDIR\resources\assets\icon.ico" 0

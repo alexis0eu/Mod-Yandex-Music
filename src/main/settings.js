@@ -10,9 +10,15 @@ const DEFAULT_SETTINGS = {
   "plus-unlocker/hideUpgradePrompts": true,
 
   // Appearance & Design
-  "design/mode": "classic", // "classic" | "modern"
+  "design/mode": "modern", // "classic" | "modern"
+  "design/glassBlur": "medium", // "off" | "light" | "medium" | "ultra"
+  "design/borderRadius": "modern", // "classic" | "modern" | "round"
+  "design/cardHoverFx": true,
+  "design/playerGlow": true,
+  "design/glowProgress": true,
+  "design/smoothTransitions": true,
   "custom-themes/enabled": true,
-  "custom-themes/accent": "#fed42b",
+  "custom-themes/accent": "#8b5cf6",
   "custom-themes/playerColorsReplace": true,
   "custom-themes/disableVibeAnimation": false,
   "custom-themes/disableExplicitMark": false,
@@ -27,16 +33,24 @@ const DEFAULT_SETTINGS = {
   "scale-changer/savedScale": 1.0,
 
   // UI Cleaner (Hide unwanted buttons/sections)
+  "cleaner/hideConcerts": false,
+  "cleaner/hideKids": false,
+  "cleaner/hidePodcasts": false,
+  "cleaner/hideTrends": false,
+  "cleaner/hideRadio": false,
+  "cleaner/hideBanners": true,
+  "cleaner/hideMobileApp": true,
+  "cleaner/hideDonates": false,
+  "cleaner/hideTickets": false,
+  "cleaner/hideTrailers": false,
   "cleaner/hideDislike": false,
   "cleaner/hideQueue": false,
   "cleaner/hideLyrics": false,
+  "cleaner/hideFullscreen": false,
   "cleaner/hidePrev": false,
   "cleaner/hideQuality": false,
   "cleaner/hideVolume": false,
   "cleaner/hideVibeBlock": false,
-  "cleaner/hidePodcasts": false,
-  "cleaner/hideTrailers": false,
-  "cleaner/hideRadio": false,
 
   // Equalizer & Audio FX
   "equalizer/enabled": false,
@@ -52,6 +66,9 @@ const DEFAULT_SETTINGS = {
   "overlay/hotkey": "CommandOrControl+Shift+O",
   "overlay/clickThrough": false,
   "overlay/hudTheme": "steam-glass", // "steam-glass" | "discord-dark" | "cyberpunk"
+  "overlay/opacity": 92,
+  "overlay/pureShadow": true,
+  "overlay/showLyrics": true,
   "karaoke/enabled": false,
   "karaoke/hotkey": "CommandOrControl+Shift+L",
   "karaoke/position": "bottom", // "top" | "bottom"

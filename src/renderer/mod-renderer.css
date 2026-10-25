@@ -179,53 +179,106 @@ body:has(#ym-mod-menu-btn) #ym-mod-floating-trigger {
   padding: 0 !important;
 }
 
-/* === SIDEBAR MOD BUTTON === */
+/* === SIDEBAR MOD CONTAINER & ADAPTIVE BUTTON === */
+.ym-mod-sidebar-container {
+  display: flex !important;
+  justify-content: center !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  margin: 6px 0 !important;
+  padding: 0 12px !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.ym-mod-sidebar-container.ym-sidebar-collapsed {
+  padding: 0 !important;
+  margin: 4px 0 !important;
+}
+
 #ym-mod-menu-btn {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 14px;
-  margin: 6px 10px;
-  border-radius: 10px;
-  border: 1px solid var(--ym-mod-border, #262626);
-  background: var(--ym-mod-card-bg, #181818);
-  color: var(--ym-mod-text, #f0f0f0);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  font-size: 13px;
-  font-weight: 500;
-  font-family: inherit;
-  outline: none;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 8px 12px !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  color: #f0f2f5 !important;
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  outline: none !important;
+  overflow: hidden !important;
 }
 
 #ym-mod-menu-btn:hover {
-  background: var(--ym-mod-card-hover, #1f1f1f);
-  border-color: #383838;
-  color: #ffffff;
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 14px var(--accent-glow, rgba(139, 92, 246, 0.4)) !important;
 }
 
 #ym-mod-menu-btn:active {
-  transform: scale(0.98);
+  transform: scale(0.96) !important;
 }
 
-.ym-mod-btn-icon {
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--yandexMusicModAccent, #fed42b);
+.ym-mod-icon-wrapper {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
-.ym-mod-badge {
-  font-size: 10px;
-  font-weight: 600;
-  padding: 1px 6px;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--ym-mod-text-secondary, #8c8c8c);
-  margin-left: auto;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+#ym-mod-menu-btn:hover .ym-mod-icon-wrapper {
+  transform: rotate(15deg) scale(1.12) !important;
+}
+
+.ym-mod-custom-logo {
+  filter: drop-shadow(0 0 6px rgba(255, 51, 71, 0.5));
+}
+
+.ym-mod-btn-text {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  flex: 1 !important;
+  text-align: left !important;
+}
+
+.ym-mod-ver-tag {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  padding: 2px 6px !important;
+  border-radius: 5px !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  margin-left: auto !important;
+}
+
+/* Collapsed Sidebar State: Clean 44x44 circular button matching other sidebar icons */
+.ym-mod-sidebar-container.ym-sidebar-collapsed #ym-mod-menu-btn {
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px !important;
+  max-width: 44px !important;
+  padding: 0 !important;
+  margin: 0 auto !important;
+  border-radius: 50% !important;
+  justify-content: center !important;
+  gap: 0 !important;
+}
+
+.ym-mod-sidebar-container.ym-sidebar-collapsed .ym-mod-btn-text,
+.ym-mod-sidebar-container.ym-sidebar-collapsed .ym-mod-ver-tag,
+.ym-mod-sidebar-container.ym-sidebar-collapsed .ym-mod-badge {
+  display: none !important;
 }
 
 /* ========================================================
@@ -804,4 +857,20 @@ div[class*="FullscreenPlayerMobile_root"] {
   height: 100vh !important;
   z-index: 999999 !important;
   margin: 0 !important;
+}
+
+.ym-tab-pane.active {
+  display: flex !important;
+  animation: ymTabSlideIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+
+@keyframes ymTabSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
