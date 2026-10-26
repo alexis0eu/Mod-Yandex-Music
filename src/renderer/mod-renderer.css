@@ -870,18 +870,6 @@ div[class*="DefaultLayout_root"] {
   left: -9999px !important;
 }
 
-/* Ensure Fullscreen Player Modal is strictly overlay when open */
-div[data-test-id*="FULLSCREEN_PLAYER_MODAL"],
-div[class*="FullscreenPlayerDesktop_root"],
-div[class*="FullscreenPlayerMobile_root"] {
-  position: fixed !important;
-  inset: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  z-index: 999999 !important;
-  margin: 0 !important;
-}
-
 .ym-tab-pane.active {
   display: flex !important;
   animation: ymTabSlideIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
