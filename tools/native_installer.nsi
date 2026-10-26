@@ -15,7 +15,7 @@ VIProductVersion "5.124.1.0"
 VIAddVersionKey "ProductName" "Яндекс Музыка"
 VIAddVersionKey "CompanyName" "Яндекс Музыка"
 VIAddVersionKey "LegalCopyright" "Яндекс Музыка"
-VIAddVersionKey "FileDescription" "Яндекс Музыка v1.2.2 (с модом)"
+VIAddVersionKey "FileDescription" "Яндекс Музыка v1.2.3 (с модом)"
 VIAddVersionKey "FileVersion" "5.124.1.0"
 
 !define MUI_ICON "..\dist\staging\resources\assets\icon.ico"
