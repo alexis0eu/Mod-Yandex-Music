@@ -1490,7 +1490,7 @@
 
   
   // ==========================================
-  // v1.3.0: DYNAMIC SNOWFALL PARTICLE SYSTEM
+  // v1.3.1: DYNAMIC SNOWFALL PARTICLE SYSTEM
   // ==========================================
   let snowAnimationId = null;
   let snowCanvas = null;
@@ -1568,7 +1568,7 @@
   }
 
   // ==========================================
-  // v1.3.0: FULLSCREEN LYRICS PAYWALL BYPASS & KARAOKE ENGINE
+  // v1.3.1: FULLSCREEN LYRICS PAYWALL BYPASS & KARAOKE ENGINE
   // ==========================================
   let fsLyricsVisible = false;
   let currentParsedLyrics = [];
@@ -1702,9 +1702,9 @@
   }, true);
 
   // ==========================================
-  // v1.3.0: AUTO-UPDATER & COMMUNITY STATS
+  // v1.3.1: AUTO-UPDATER & COMMUNITY STATS
   // ==========================================
-  const CURRENT_MOD_VERSION = "v1.3.0";
+  const CURRENT_MOD_VERSION = "v1.3.1";
 
   async function checkModUpdates() {
     try {
@@ -1744,14 +1744,26 @@
   }
 
   // ==========================================
-  // v1.3.0: CREATOR ADMIN & USER PROPOSALS
+  // v1.3.1: CREATOR ADMIN & USER PROPOSALS
   // ==========================================
   function isCurrentUserAdmin() {
     try {
       if (localStorage.getItem("ym_mod_is_admin") === "true") return true;
       if (window.__IS_MOD_ADMIN__) return true;
-      const userContainer = document.querySelector('div[class*="NavbarDesktopUserWidget_userProfileContainer"], aside [data-test-id="USER_PROFILE"]');
-      if (userContainer && userContainer.innerText && userContainer.innerText.toLowerCase().includes("alex.bibikov082011")) {
+
+      // Check currentAccountStatus if present
+      if (typeof currentAccountStatus !== "undefined" && currentAccountStatus) {
+        const s = JSON.stringify(currentAccountStatus).toLowerCase();
+        if (s.includes("alex.bibikov") || s.includes("бибиков") || s.includes("alexis0eu")) {
+          localStorage.setItem("ym_mod_is_admin", "true");
+          return true;
+        }
+      }
+
+      // Check user profile container or page text for Alex
+      const bodyText = (document.body ? document.body.innerText.slice(0, 10000) : "").toLowerCase();
+      if (bodyText.includes("алексей бибиков") || bodyText.includes("alex.bibikov") || bodyText.includes("alexis0eu") || bodyText.includes("бибиков")) {
+        localStorage.setItem("ym_mod_is_admin", "true");
         return true;
       }
     } catch (e) {}
@@ -1774,35 +1786,44 @@
     if (document.getElementById("ym-proposal-modal")) return;
     const modal = document.createElement("div");
     modal.id = "ym-proposal-modal";
-    modal.className = "ym-mod-backdrop";
-    modal.style.zIndex = "100000";
+    modal.className = "ym-mod-modal-backdrop";
+    modal.style.cssText = "position:fixed!important;inset:0!important;background:rgba(0,0,0,0.75)!important;backdrop-filter:blur(16px)!important;-webkit-backdrop-filter:blur(16px)!important;display:flex!important;align-items:center!important;justify-content:center!important;z-index:99999999!important;opacity:1!important;visibility:visible!important;";
+    
     modal.innerHTML = `
-      <div class="ym-mod-modal" style="width:520px;max-width:92vw;">
+      <div class="ym-mod-modal" style="width:520px;max-width:92vw;border:1px solid rgba(255,45,60,0.35);box-shadow:0 20px 50px rgba(0,0,0,0.8),0 0 30px rgba(255,45,60,0.25);">
         <div class="ym-modal-header">
           <div class="ym-modal-header-left">
-            <div class="ym-modal-title">💡 Предложить идею создателю мода</div>
+            <div class="ym-modal-title" style="display:flex;align-items:center;gap:8px;">
+              <span>💡</span>
+              <span>Предложить идею создателю мода</span>
+            </div>
           </div>
-          <button class="ym-modal-close" id="ym-prop-close">&times;</button>
+          <button class="ym-modal-close" id="ym-prop-close" style="cursor:pointer;">&times;</button>
         </div>
         <div style="padding:22px;display:flex;flex-direction:column;gap:14px;">
           <div>
-            <label style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.7);display:block;margin-bottom:6px;">Заголовок идеи *</label>
-            <input type="text" id="ym-prop-title" class="ym-input" placeholder="Например: Добавить эквалайзер с пресетами" style="width:100%;box-sizing:border-box;">
+            <label style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.75);display:block;margin-bottom:6px;">Заголовок идеи *</label>
+            <input type="text" id="ym-prop-title" class="ym-input" placeholder="Например: Добавить эквалайзер с пресетами" style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;">
           </div>
           <div>
-            <label style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.7);display:block;margin-bottom:6px;">Подробное описание идеи *</label>
-            <textarea id="ym-prop-desc" class="ym-input" rows="4" placeholder="Опиши, как это должно работать и почему это круто..." style="width:100%;box-sizing:border-box;resize:vertical;"></textarea>
+            <label style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.75);display:block;margin-bottom:6px;">Подробное описание идеи *</label>
+            <textarea id="ym-prop-desc" class="ym-input" rows="4" placeholder="Опиши, как это должно работать и почему это круто..." style="width:100%;box-sizing:border-box;resize:vertical;padding:10px;border-radius:8px;"></textarea>
           </div>
           <div>
-            <label style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.7);display:block;margin-bottom:6px;">Твой контакт (Telegram / Discord) — по желанию</label>
-            <input type="text" id="ym-prop-contact" class="ym-input" placeholder="@username" style="width:100%;box-sizing:border-box;">
+            <label style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.75);display:block;margin-bottom:6px;">Твой контакт (Telegram / Discord) — по желанию</label>
+            <input type="text" id="ym-prop-contact" class="ym-input" placeholder="@username" style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;">
           </div>
-          <button id="ym-prop-submit" class="ym-btn-action" style="background:#ff2d3c;color:#fff;font-weight:700;margin-top:6px;padding:10px;">🚀 Отправить создателю</button>
+          <button id="ym-prop-submit" class="ym-btn-action" style="background:#ff2d3c;color:#fff;font-weight:700;margin-top:6px;padding:12px;font-size:14px;border-radius:10px;cursor:pointer;">🚀 Отправить создателю</button>
         </div>
       </div>
     `;
     document.body.appendChild(modal);
+
     document.getElementById("ym-prop-close")?.addEventListener("click", () => modal.remove());
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) modal.remove();
+    });
+
     document.getElementById("ym-prop-submit")?.addEventListener("click", () => {
       const title = document.getElementById("ym-prop-title")?.value.trim();
       const desc = document.getElementById("ym-prop-desc")?.value.trim();
@@ -1811,11 +1832,21 @@
         showToast("⚠️ Заполните заголовок и описание идеи");
         return;
       }
-      const bodyText = `${desc}\n\n---\n**Контакт автора:** ${contact || "Не указан"}\n**Версия мода:** v1.3.0`;
+      const bodyText = `${desc}
+
+---
+**Контакт автора:** ${contact || "Не указан"}
+**Версия мода:** v1.3.1`;
       const issueUrl = `https://github.com/alexis0eu/Mod-Yandex-Music/issues/new?title=${encodeURIComponent("[Идея] " + title)}&body=${encodeURIComponent(bodyText)}&labels=suggestion`;
-      window.open(issueUrl, "_blank");
+
+      if (window.yandexMusicMod && typeof window.yandexMusicMod.openExternal === "function") {
+        window.yandexMusicMod.openExternal(issueUrl);
+      } else {
+        window.open(issueUrl, "_blank");
+      }
+
       modal.remove();
-      showToast("🎉 Идея передана! Открываем страницу отправки...");
+      showToast("🎉 Идея передана! Открываем страницу отправки на GitHub...");
     });
   }
 
@@ -1851,57 +1882,56 @@
 
 
   function applyFont(fontName, enabled = true) {
-
     ensureBaseStylesheet();
 
-
-
     const existing = document.getElementById(FONT_STYLESHEET_ID);
-
     if (existing) existing.remove();
 
-
-
-    if (!enabled) return;
-
-
-
-    let fontFamily = fontName || "JetBrains Mono";
-
-    let extraCss = "";
+    const fLower = String(fontName || "").toLowerCase();
+    const isNewYear = fLower.includes("newyear") || fLower.includes("новогод") || fLower.includes("marck");
 
     // Manage snowflake canvas
-    if (enabled && fontName === "Новогодний") {
+    if (enabled && isNewYear) {
       startSnowfall();
     } else {
       stopSnowfall();
     }
 
-    document.body.setAttribute("data-ym-font", enabled ? fontName : "");
+    const fontEffectTag = isNewYear ? "Новогодний" : 
+      (fLower.includes("halloween") || fLower.includes("хэллоу") || fLower.includes("ruslan") ? "Хэллоуин" : 
+      (fLower.includes("cyberpunk") || fLower.includes("кибер") || fLower.includes("rubik") ? "Киберпанк" : 
+      (fLower.includes("arcade") || fLower.includes("press start") ? "Arcade 8-Bit" : fontName)));
 
-    if (fontName === "Terraria" || fontName === "Andy Bold") {
+    document.body.setAttribute("data-ym-font", enabled ? fontEffectTag : "");
+
+    if (!enabled) return;
+
+    let fontFamily = "Terraria";
+    let extraCss = "";
+
+    if (fLower.includes("terraria") || fLower.includes("andy")) {
       fontFamily = "Terraria";
-    } else if (fontName === "Minecraft") {
+    } else if (fLower.includes("minecraft")) {
       fontFamily = "Minecraft";
       extraCss = "*:not(.UserID-Avatar-Image):not(img) { border-radius: 0 !important; }";
-    } else if (fontName === "Новогодний") {
+    } else if (isNewYear) {
       fontFamily = "Marck Script";
-    } else if (fontName === "Хэллоуин") {
+    } else if (fLower.includes("halloween") || fLower.includes("хэллоу") || fLower.includes("ruslan")) {
       fontFamily = "Ruslan Display";
-    } else if (fontName === "Киберпанк") {
+    } else if (fLower.includes("cyberpunk") || fLower.includes("кибер") || fLower.includes("rubik")) {
       fontFamily = "Rubik Glitch";
-    } else if (fontName === "Arcade 8-Bit") {
+    } else if (fLower.includes("arcade") || fLower.includes("press start")) {
       fontFamily = "Press Start 2P";
       extraCss = "*:not(.UserID-Avatar-Image):not(img) { border-radius: 2px !important; }";
-    } else if (fontName === "Kelly Slab") {
+    } else if (fLower.includes("kelly")) {
       fontFamily = "Kelly Slab";
-    } else if (fontName === "JetBrains Mono") {
+    } else if (fLower.includes("jetbrains")) {
       fontFamily = "JetBrains Mono";
+    } else if (fLower.includes("original") || fLower.includes("yandex sans")) {
+      fontFamily = "Yandex Sans (Original)";
+    } else {
+      fontFamily = fontName || "Terraria";
     }
-
-
-
-    // Sanitize custom font names to strip quotes, braces, semicolons, and angle brackets
 
     fontFamily = String(fontFamily).replace(/["'{}<>;\\]/g, "").trim() || "JetBrains Mono";
 
@@ -2501,7 +2531,7 @@
 
             <div class="ym-modal-title">Настройки Мода</div>
 
-            <div class="ym-modal-version">v1.3.0 (YM 5.124.1)</div>
+            <div class="ym-modal-version">v1.3.1 (YM 5.124.1)</div>
 
           </div>
 
@@ -3406,25 +3436,15 @@
                   </div>
 
                   <select class="ym-select" id="opt-font-family">
-
-                    <option value="Terraria">Terraria / Andy Bold (Мультяшный)</option>
-
-                    <option value="Minecraft">Minecraft (Пиксельный ретро)</option>
-
-                    <option value="Russo One">Russo One (Аркадный геймерский)</option>
-
-                    <option value="Comfortaa">Comfortaa (Сглаженный футуризм)</option>
-
-                    <option value="Unbounded">Unbounded (Техно / Sci-Fi)</option>
-
-                    <option value="Caveat">Caveat (Живой рукописный)</option>
-
-                    <option value="Podkova">Podkova (Винтажный брусок)</option>
-
-                    <option value="JetBrains Mono">JetBrains Mono (Моноширинный код)</option>
-
-                    <option value="Yandex Sans (Original)">Оригинальный (Yandex Sans)</option>
-
+                    <option value="Terraria">Terraria / Andy Bold (Любимый)</option>
+                    <option value="Minecraft">Minecraft (Квадратный мир)</option>
+                    <option value="NewYear">❄️ Новогодний (Снегопад и уют)</option>
+                    <option value="Halloween">🎃 Хэллоуин (Готика и мистика)</option>
+                    <option value="Cyberpunk">⚡ Киберпанк (Неон и глитч)</option>
+                    <option value="Arcade">🕹️ Arcade 8-Bit (Ретро-гейминг)</option>
+                    <option value="KellySlab">Kelly Slab (Футуризм)</option>
+                    <option value="JetBrains">JetBrains Mono (Моноширинный)</option>
+                    <option value="Original">Оригинал (Yandex Sans)</option>
                   </select>
 
                 </div>
@@ -3796,7 +3816,7 @@
 
 
 
-    // v1.3.0: Admin creator tab injection
+    // v1.3.1: Admin creator tab injection
     if (isCurrentUserAdmin()) {
       const tabsContainer = backdrop.querySelector(".ym-modal-tabs");
       const contentContainer = backdrop.querySelector(".ym-modal-content");
@@ -3850,7 +3870,7 @@
     const modalLogo = backdrop.querySelector(".ym-modal-logo");
     if (modalLogo) {
       modalLogo.style.cursor = "pointer";
-      modalLogo.title = "Версия v1.3.0";
+      modalLogo.title = "Версия v1.3.1";
       modalLogo.addEventListener("click", () => {
         logoClicks++;
         clearTimeout(logoTimer);
@@ -4667,7 +4687,7 @@
 
           <span class="ym-mod-btn-text">Настройки Мода</span>
 
-          <span class="ym-mod-ver-tag">v1.3.0</span>
+          <span class="ym-mod-ver-tag">v1.3.1</span>
 
         `;
 
@@ -5781,3 +5801,12 @@
 
 })();
 
+
+  // Global click handler for open-proposal
+  document.addEventListener('click', (e) => {
+    if (e.target && (e.target.id === 'ym-btn-open-proposal' || e.target.closest('#ym-btn-open-proposal'))) {
+      e.preventDefault();
+      e.stopPropagation();
+      openProposalModal();
+    }
+  });

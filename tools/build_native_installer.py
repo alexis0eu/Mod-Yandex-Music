@@ -41,6 +41,17 @@ def build_installer():
 
     print(f"[+] Staged files count: {sum(len(f) for _, _, f in os.walk(staging_dir))}")
 
+    # Patch PE icon in staging executable before packaging
+    try:
+        ico_file = os.path.join(repo_root, "assets", "icon.ico")
+        from patch_exe_icon import patch_exe_icon
+        for f in os.listdir(staging_dir):
+            if f.endswith(".exe") and not f.startswith("Uninstall"):
+                patch_exe_icon(os.path.join(staging_dir, f), ico_file)
+                print(f"[+] Patched PE icon in staging executable: {f}")
+    except Exception as e:
+        print(f"[!] Warning patching staging exe icon: {e}")
+
     print(f"[+] Compiling installer with NSIS: {nsis_exe} (/INPUTCHARSET UTF8)...")
     proc = subprocess.run([nsis_exe, "/INPUTCHARSET", "UTF8", nsi_script], cwd=os.path.join(repo_root, "tools"), capture_output=True)
     try:

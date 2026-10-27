@@ -554,6 +554,17 @@ try {
 
         patch_executable_integrity(asar_path)
 
+        # Update PE icon inside executable
+        try:
+            from patch_exe_icon import patch_exe_icon
+            app_dir = os.path.dirname(os.path.dirname(asar_path))
+            for f in os.listdir(app_dir):
+                if f.endswith(".exe") and not f.startswith("Uninstall"):
+                    patch_exe_icon(os.path.join(app_dir, f), os.path.join(PROJECT_DIR, "assets", "icon.ico"))
+                    break
+        except Exception as e:
+            print(f"[!] Warning patching exe icon in inject: {e}")
+
         # 14. Update application icons to mod red theme
         try:
             resources_dir = os.path.dirname(asar_path)

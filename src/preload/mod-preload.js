@@ -28,6 +28,7 @@
       selectDownloadFolder: () => electron.ipcRenderer.invoke("yandexMusicMod.selectDownloadFolder"),
       openDownloadDirectory: () => electron.ipcRenderer.send("yandexMusicMod.openDownloadDirectory"),
       openFolder: (path) => electron.ipcRenderer.invoke("yandexMusicMod.openFolder", path),
+      openExternal: (url) => electron.ipcRenderer.send("yandexMusicMod.openExternal", url),
       onOpenSettings: (callback) => {
         const listener = () => callback();
         electron.ipcRenderer.on("yandexMusicMod.openSettingsModal", listener);

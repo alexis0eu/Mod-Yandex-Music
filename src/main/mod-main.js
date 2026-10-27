@@ -754,6 +754,17 @@ function setupIpcHandlers() {
     updateDiscordActivity(state);
   });
 
+  // Open external URL in system browser
+  ipcMain.on("yandexMusicMod.openExternal", (_ev, url) => {
+    try {
+      if (url && typeof url === "string" && (url.startsWith("http://") || url.startsWith("https://"))) {
+        shell.openExternal(url);
+      }
+    } catch (e) {
+      console.error("[Mod Main] openExternal error:", e);
+    }
+  });
+
   // Lyrics forward to Karaoke and Overlay
   ipcMain.on("yandexMusicMod.updateLyrics", (_ev, lyricsData) => {
     lastLyricsData = lyricsData;
