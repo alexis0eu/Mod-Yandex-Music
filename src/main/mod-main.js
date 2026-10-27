@@ -34,7 +34,9 @@ function initModMain() {
   settingsManager = new SettingsManager();
 
   // 1. Discord RPC
-  discordRPC = new DiscordRPC();
+  const initialAppTitle = settingsManager.get("discordRPC/appTitle", "ru");
+  const initialClientId = initialAppTitle === "en" ? "1344383182836269158" : "1283109459463377011";
+  discordRPC = new DiscordRPC(initialClientId);
   const rpcEnabled = settingsManager.get("discordRPC/enabled", true);
   discordRPC.enabled = rpcEnabled;
   if (rpcEnabled) {
@@ -42,6 +44,13 @@ function initModMain() {
   }
 
   settingsManager.onChange((key, value) => {
+    if (key === "discordRPC/appTitle") {
+      const newCid = value === "en" ? "1344383182836269158" : "1283109459463377011";
+      if (discordRPC) {
+        discordRPC.setClientId(newCid);
+        if (lastPlayerState) updateDiscordActivity(lastPlayerState);
+      }
+    }
     if (key === "discordRPC/enabled") {
       discordRPC.enabled = !!value;
       if (value) {

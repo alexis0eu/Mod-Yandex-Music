@@ -21,6 +21,15 @@ class DiscordRPC {
     this.startWatchdog();
   }
 
+  setClientId(newId) {
+    if (!newId || this.clientId === newId) return;
+    this.clientId = newId;
+    this.cleanupSocket();
+    if (this.enabled) {
+      this.connect();
+    }
+  }
+
   startWatchdog() {
     if (this.watchdogInterval) return;
     this.watchdogInterval = setInterval(() => {
