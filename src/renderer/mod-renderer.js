@@ -174,6 +174,42 @@
 
 
 
+  
+  // Global Toast Notification & Safe HTML Escaping (v1.3.2)
+  function escapeHtml(str) {
+    if (!str) return "";
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function showToast(message, isInfo = false) {
+    try {
+      const existing = document.getElementById("ym-mod-toast-notification");
+      if (existing) existing.remove();
+
+      const toast = document.createElement("div");
+      toast.id = "ym-mod-toast-notification";
+      toast.style.cssText = "position:fixed!important;bottom:32px!important;left:50%!important;transform:translateX(-50%)!important;background:rgba(20,22,28,0.94)!important;backdrop-filter:blur(16px)!important;-webkit-backdrop-filter:blur(16px)!important;color:#fff!important;border:1px solid rgba(255,45,60,0.45)!important;box-shadow:0 12px 36px rgba(0,0,0,0.7),0 0 24px rgba(255,45,60,0.3)!important;padding:10px 22px!important;border-radius:24px!important;font-size:13px!important;font-weight:600!important;z-index:100000000!important;display:flex!important;align-items:center!important;gap:8px!important;pointer-events:none!important;animation:ymFadeInUp 0.25s ease-out!important;";
+      toast.innerHTML = `<span>${escapeHtml(String(message))}</span>`;
+      document.body.appendChild(toast);
+
+      setTimeout(() => {
+        if (toast && toast.parentNode) {
+          toast.style.transition = "opacity 0.4s ease, transform 0.4s ease";
+          toast.style.opacity = "0";
+          toast.style.transform = "translateX(-50%) translateY(10px)";
+          setTimeout(() => toast.remove(), 400);
+        }
+      }, 2500);
+    } catch (e) {
+      console.log("[YandexMusicMod Toast]", message);
+    }
+  }
+
   const MOD_LOGO_ICON_B64 = "data:image/png;base64,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";
 
   const UI_CLEANER_STYLESHEET_ID = "ym-mod-ui-cleaner-style";
@@ -1490,7 +1526,7 @@
 
   
   // ==========================================
-  // v1.3.1: DYNAMIC SNOWFALL PARTICLE SYSTEM
+  // v1.3.2: DYNAMIC SNOWFALL PARTICLE SYSTEM
   // ==========================================
   let snowAnimationId = null;
   let snowCanvas = null;
@@ -1568,7 +1604,7 @@
   }
 
   // ==========================================
-  // v1.3.1: FULLSCREEN LYRICS PAYWALL BYPASS & KARAOKE ENGINE
+  // v1.3.2: FULLSCREEN LYRICS PAYWALL BYPASS & KARAOKE ENGINE
   // ==========================================
   let fsLyricsVisible = false;
   let currentParsedLyrics = [];
@@ -1702,9 +1738,9 @@
   }, true);
 
   // ==========================================
-  // v1.3.1: AUTO-UPDATER & COMMUNITY STATS
+  // v1.3.2: AUTO-UPDATER & COMMUNITY STATS
   // ==========================================
-  const CURRENT_MOD_VERSION = "v1.3.1";
+  const CURRENT_MOD_VERSION = "v1.3.2";
 
   async function checkModUpdates() {
     try {
@@ -1744,7 +1780,7 @@
   }
 
   // ==========================================
-  // v1.3.1: CREATOR ADMIN & USER PROPOSALS
+  // v1.3.2: CREATOR ADMIN & USER PROPOSALS
   // ==========================================
   function isCurrentUserAdmin() {
     try {
@@ -1773,16 +1809,24 @@
   function injectCreatorBadge() {
     if (!isCurrentUserAdmin()) return;
     const userContainer = document.querySelector('div[class*="NavbarDesktopUserWidget_userProfileContainer"], aside [data-test-id="USER_PROFILE"]');
-    if (userContainer && !userContainer.querySelector(".ym-creator-badge")) {
-      const badge = document.createElement("span");
-      badge.className = "ym-creator-badge";
-      badge.innerHTML = "👑 Создатель мода";
-      userContainer.appendChild(badge);
+    if (!userContainer) return;
+
+    // Remove old yellow badge if present
+    const oldBadge = userContainer.querySelector(".ym-creator-badge");
+    if (oldBadge) oldBadge.remove();
+
+    const nameElem = userContainer.querySelector('div[class*="NavbarDesktopUserWidget_userName"], span[class*="userName"], div[class*="userProfile"] span') || userContainer;
+    if (nameElem && !nameElem.querySelector(".ym-creator-crown") && !userContainer.querySelector(".ym-creator-crown")) {
+      const crown = document.createElement("span");
+      crown.className = "ym-creator-crown";
+      crown.title = "Создатель мода";
+      crown.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="#ff2d3c" style="filter:drop-shadow(0 0 6px rgba(255,45,60,0.9));margin-left:6px;vertical-align:middle;display:inline-block;"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/></svg>`;
+      nameElem.appendChild(crown);
     }
   }
   setInterval(injectCreatorBadge, 3000);
 
-  function openProposalModal() {
+    function openProposalModal() {
     if (document.getElementById("ym-proposal-modal")) return;
     const modal = document.createElement("div");
     modal.id = "ym-proposal-modal";
@@ -1803,15 +1847,15 @@
         <div style="padding:22px;display:flex;flex-direction:column;gap:14px;">
           <div>
             <label style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.75);display:block;margin-bottom:6px;">Заголовок идеи *</label>
-            <input type="text" id="ym-prop-title" class="ym-input" placeholder="Например: Добавить эквалайзер с пресетами" style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;">
+            <input type="text" id="ym-prop-title" class="ym-input" placeholder="Например: Добавить эквалайзер с пресетами" style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;background:rgba(255,255,255,0.06);color:#fff;border:1px solid rgba(255,255,255,0.15);">
           </div>
           <div>
             <label style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.75);display:block;margin-bottom:6px;">Подробное описание идеи *</label>
-            <textarea id="ym-prop-desc" class="ym-input" rows="4" placeholder="Опиши, как это должно работать и почему это круто..." style="width:100%;box-sizing:border-box;resize:vertical;padding:10px;border-radius:8px;"></textarea>
+            <textarea id="ym-prop-desc" class="ym-input" rows="4" placeholder="Опиши, как это должно работать и почему это круто..." style="width:100%;box-sizing:border-box;resize:vertical;padding:10px;border-radius:8px;background:rgba(255,255,255,0.06);color:#fff;border:1px solid rgba(255,255,255,0.15);"></textarea>
           </div>
           <div>
             <label style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.75);display:block;margin-bottom:6px;">Твой контакт (Telegram / Discord) — по желанию</label>
-            <input type="text" id="ym-prop-contact" class="ym-input" placeholder="@username" style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;">
+            <input type="text" id="ym-prop-contact" class="ym-input" placeholder="@username" style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;background:rgba(255,255,255,0.06);color:#fff;border:1px solid rgba(255,255,255,0.15);">
           </div>
           <button id="ym-prop-submit" class="ym-btn-action" style="background:#ff2d3c;color:#fff;font-weight:700;margin-top:6px;padding:12px;font-size:14px;border-radius:10px;cursor:pointer;">🚀 Отправить создателю</button>
         </div>
@@ -1825,18 +1869,51 @@
     });
 
     document.getElementById("ym-prop-submit")?.addEventListener("click", () => {
-      const title = document.getElementById("ym-prop-title")?.value.trim();
-      const desc = document.getElementById("ym-prop-desc")?.value.trim();
-      const contact = document.getElementById("ym-prop-contact")?.value.trim();
-      if (!title || !desc) {
-        showToast("⚠️ Заполните заголовок и описание идеи");
+      const titleInput = document.getElementById("ym-prop-title");
+      const descInput = document.getElementById("ym-prop-desc");
+      const contactInput = document.getElementById("ym-prop-contact");
+      const title = titleInput?.value.trim();
+      const desc = descInput?.value.trim();
+      const contact = contactInput?.value.trim();
+
+      if (!title) {
+        if (titleInput) {
+          titleInput.style.border = "1px solid #ff2d3c";
+          titleInput.focus();
+        }
+        showToast("⚠️ Укажите заголовок идеи");
         return;
       }
+      if (!desc) {
+        if (descInput) {
+          descInput.style.border = "1px solid #ff2d3c";
+          descInput.focus();
+        }
+        showToast("⚠️ Опишите вашу идею");
+        return;
+      }
+
+      // Save locally so it appears in the creator admin tab immediately
+      try {
+        const localList = JSON.parse(localStorage.getItem("ym_user_proposals") || "[]");
+        localList.unshift({
+          title,
+          body: desc + (contact ? `
+
+Контакт: ${contact}` : ""),
+          user: { login: contact || "Пользователь мода" },
+          created_at: new Date().toISOString(),
+          state: "open",
+          isLocal: true
+        });
+        localStorage.setItem("ym_user_proposals", JSON.stringify(localList.slice(0, 50)));
+      } catch (e) {}
+
       const bodyText = `${desc}
 
 ---
 **Контакт автора:** ${contact || "Не указан"}
-**Версия мода:** v1.3.1`;
+**Версия мода:** v1.3.2`;
       const issueUrl = `https://github.com/alexis0eu/Mod-Yandex-Music/issues/new?title=${encodeURIComponent("[Идея] " + title)}&body=${encodeURIComponent(bodyText)}&labels=suggestion`;
 
       if (window.yandexMusicMod && typeof window.yandexMusicMod.openExternal === "function") {
@@ -1846,42 +1923,71 @@
       }
 
       modal.remove();
-      showToast("🎉 Идея передана! Открываем страницу отправки на GitHub...");
+      showToast("🎉 Идея сохранена и открыта страница на GitHub!");
     });
   }
 
-  async function loadAdminProposals() {
+    async function loadAdminProposals() {
     const container = document.getElementById("ym-admin-proposals-container");
     if (!container) return;
-    container.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.4);padding:20px;">Загрузка предложений с GitHub...</div>';
+    container.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.4);padding:20px;">Загрузка предложений...</div>';
+
+    let localProposals = [];
+    try {
+      localProposals = JSON.parse(localStorage.getItem("ym_user_proposals") || "[]");
+    } catch (e) {}
+
+    let githubIssues = [];
     try {
       const res = await fetch("https://api.github.com/repos/alexis0eu/Mod-Yandex-Music/issues?labels=suggestion&state=all&per_page=30");
-      if (!res.ok) throw new Error("Status: " + res.status);
-      const issues = await res.json();
-      if (!issues || issues.length === 0) {
-        container.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.5);padding:30px;">Пока нет входящих предложений от пользователей.</div>';
-        return;
-      }
-      container.innerHTML = issues.map((iss) => `
-        <div class="ym-proposal-card">
-          <div class="ym-proposal-header">
-            <span class="ym-proposal-title">${escapeHtml(iss.title)}</span>
-            <span class="ym-badge" style="background:${iss.state === "open" ? "#22c55e" : "#ef4444"};color:#fff;">${iss.state}</span>
-          </div>
-          <div class="ym-proposal-body">${escapeHtml(iss.body ? iss.body.slice(0, 240) : "Без описания")}${iss.body && iss.body.length > 240 ? "..." : ""}</div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;">
-            <span style="font-size:11px;color:rgba(255,255,255,0.4);">От: <b>${escapeHtml(iss.user?.login || "Аноним")}</b> • ${new Date(iss.created_at).toLocaleDateString()}</span>
-            <a href="${iss.html_url}" target="_blank" style="font-size:12px;color:#ff2d3c;text-decoration:none;font-weight:700;">Открыть на GitHub &rarr;</a>
-          </div>
-        </div>
-      `).join("");
-    } catch (e) {
-      container.innerHTML = `<div style="text-align:center;color:#ef4444;padding:20px;">Ошибка загрузки предложений: ${escapeHtml(e.message)}</div>`;
+      if (res.ok) githubIssues = await res.json();
+    } catch (e) {}
+
+    const allProposals = [...localProposals, ...githubIssues];
+    if (allProposals.length === 0) {
+      container.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.5);padding:30px;">Пока нет входящих предложений от пользователей.</div>';
+      return;
     }
+
+    container.innerHTML = allProposals.map((iss) => `
+      <div class="ym-proposal-card" style="margin-bottom:12px;background:rgba(255,255,255,0.04);border:1px solid ${iss.isLocal ? 'rgba(255,45,60,0.35)' : 'rgba(255,255,255,0.08)'};padding:14px;border-radius:12px;">
+        <div class="ym-proposal-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span class="ym-proposal-title" style="font-weight:700;font-size:14px;color:#fff;">${escapeHtml(iss.title)}</span>
+          <span class="ym-badge" style="background:${iss.isLocal ? '#ff2d3c' : (iss.state === 'open' ? '#22c55e' : '#ef4444')};color:#fff;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;">${iss.isLocal ? 'Новое' : iss.state}</span>
+        </div>
+        <div class="ym-proposal-body" style="font-size:13px;color:rgba(255,255,255,0.8);line-height:1.5;white-space:pre-wrap;">${escapeHtml(iss.body ? iss.body.slice(0, 300) : "Без описания")}${iss.body && iss.body.length > 300 ? "..." : ""}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.06);">
+          <span style="font-size:11px;color:rgba(255,255,255,0.45);">От: <b>${escapeHtml(iss.user?.login || "Пользователь")}</b> • ${new Date(iss.created_at || Date.now()).toLocaleDateString()}</span>
+          ${iss.html_url ? `<a href="${iss.html_url}" target="_blank" style="font-size:12px;color:#ff2d3c;text-decoration:none;font-weight:700;">Открыть на GitHub &rarr;</a>` : '<span style="font-size:11px;color:#22c55e;">Сохранено в моде</span>'}
+        </div>
+      </div>
+    `).join("");
   }
 
 
-  function applyFont(fontName, enabled = true) {
+  
+  // ==========================================
+  // v1.3.2: HALLOWEEN DECORATIONS & FLYING PUMPKINS
+  // ==========================================
+  function startHalloweenDecorations() {
+    if (document.getElementById("ym-halloween-decorations")) return;
+    const container = document.createElement("div");
+    container.id = "ym-halloween-decorations";
+    container.style.cssText = "position:fixed!important;inset:0!important;pointer-events:none!important;z-index:900!important;overflow:hidden!important;";
+    container.innerHTML = `
+      <div class="ym-halloween-pumpkin ym-pumpkin-1" style="position:absolute;bottom:100px;right:40px;font-size:38px;filter:drop-shadow(0 0 16px rgba(255,117,24,0.85));animation:ymPumpkinFloat 4s ease-in-out infinite;">🎃</div>
+      <div class="ym-halloween-pumpkin ym-pumpkin-2" style="position:absolute;top:80px;right:70px;font-size:28px;filter:drop-shadow(0 0 14px rgba(255,117,24,0.75));animation:ymPumpkinFloat 5s ease-in-out infinite reverse;opacity:0.9;">🎃</div>
+      <div class="ym-halloween-pumpkin ym-pumpkin-3" style="position:absolute;top:140px;left:260px;font-size:24px;filter:drop-shadow(0 0 12px rgba(255,117,24,0.7));animation:ymPumpkinFloat 4.5s ease-in-out infinite 1s;opacity:0.85;">🎃</div>
+    `;
+    document.body.appendChild(container);
+  }
+
+  function stopHalloweenDecorations() {
+    const el = document.getElementById("ym-halloween-decorations");
+    if (el) el.remove();
+  }
+
+    function applyFont(fontName, enabled = true) {
     ensureBaseStylesheet();
 
     const existing = document.getElementById(FONT_STYLESHEET_ID);
@@ -1889,20 +1995,34 @@
 
     const fLower = String(fontName || "").toLowerCase();
     const isNewYear = fLower.includes("newyear") || fLower.includes("новогод") || fLower.includes("marck");
+    const isHalloween = fLower.includes("halloween") || fLower.includes("хэллоу") || fLower.includes("ruslan");
+    const isCyberpunk = fLower.includes("cyberpunk") || fLower.includes("кибер") || fLower.includes("rubik");
+    const isArcade = fLower.includes("arcade") || fLower.includes("press start");
+
+    const fontEffectsEnabled = modSettings["typography/fontEffects"] !== false;
 
     // Manage snowflake canvas
-    if (enabled && isNewYear) {
+    if (enabled && isNewYear && fontEffectsEnabled) {
       startSnowfall();
     } else {
       stopSnowfall();
     }
 
-    const fontEffectTag = isNewYear ? "Новогодний" : 
-      (fLower.includes("halloween") || fLower.includes("хэллоу") || fLower.includes("ruslan") ? "Хэллоуин" : 
-      (fLower.includes("cyberpunk") || fLower.includes("кибер") || fLower.includes("rubik") ? "Киберпанк" : 
-      (fLower.includes("arcade") || fLower.includes("press start") ? "Arcade 8-Bit" : fontName)));
+    // Manage Halloween decorations
+    if (enabled && isHalloween && fontEffectsEnabled) {
+      startHalloweenDecorations();
+    } else {
+      stopHalloweenDecorations();
+    }
 
-    document.body.setAttribute("data-ym-font", enabled ? fontEffectTag : "");
+    const fontEffectTag = (enabled && fontEffectsEnabled) ? (
+      isNewYear ? "Новогодний" :
+      isHalloween ? "Хэллоуин" :
+      isCyberpunk ? "Киберпанк" :
+      isArcade ? "Arcade 8-Bit" : fontName
+    ) : "";
+
+    document.body.setAttribute("data-ym-font", fontEffectTag);
 
     if (!enabled) return;
 
@@ -1913,16 +2033,20 @@
       fontFamily = "Terraria";
     } else if (fLower.includes("minecraft")) {
       fontFamily = "Minecraft";
-      extraCss = "*:not(.UserID-Avatar-Image):not(img) { border-radius: 0 !important; }";
+      if (fontEffectsEnabled) {
+        extraCss = "*:not(.UserID-Avatar-Image):not(img) { border-radius: 0 !important; }";
+      }
     } else if (isNewYear) {
       fontFamily = "Marck Script";
-    } else if (fLower.includes("halloween") || fLower.includes("хэллоу") || fLower.includes("ruslan")) {
+    } else if (isHalloween) {
       fontFamily = "Ruslan Display";
-    } else if (fLower.includes("cyberpunk") || fLower.includes("кибер") || fLower.includes("rubik")) {
+    } else if (isCyberpunk) {
       fontFamily = "Rubik Glitch";
-    } else if (fLower.includes("arcade") || fLower.includes("press start")) {
+    } else if (isArcade) {
       fontFamily = "Press Start 2P";
-      extraCss = "*:not(.UserID-Avatar-Image):not(img) { border-radius: 2px !important; }";
+      if (fontEffectsEnabled) {
+        extraCss = "*:not(.UserID-Avatar-Image):not(img) { border-radius: 2px !important; }";
+      }
     } else if (fLower.includes("kelly")) {
       fontFamily = "Kelly Slab";
     } else if (fLower.includes("jetbrains")) {
@@ -1935,108 +2059,50 @@
 
     fontFamily = String(fontFamily).replace(/["'{}<>;\\]/g, "").trim() || "JetBrains Mono";
 
-
-
     const rawSizeScale = parseFloat(modSettings["font-changer/sizeScale"]);
+    let fontSizeScale = (!isNaN(rawSizeScale) && isFinite(rawSizeScale)) ? Math.max(0.7, Math.min(1.5, rawSizeScale)) : 1.0;
 
-    let fontSizeScale = (!isNaN(rawSizeScale) && isFinite(rawSizeScale)) ? Math.max(0.5, Math.min(2.0, rawSizeScale)) : 1.0;
-
-    if (isNaN(fontSizeScale)) {
-
-      fontSizeScale = 1.0;
-
-    }
+    const rawModalScale = parseFloat(modSettings["font-changer/modalSizeScale"]);
+    let modalSizeScale = (!isNaN(rawModalScale) && isFinite(rawModalScale)) ? Math.max(0.7, Math.min(1.5, rawModalScale)) : 1.0;
 
     const fontWeight = modSettings["font-changer/weight"] || "normal";
-
     const letterSpacing = modSettings["font-changer/letterSpacing"] || "normal";
 
-
-
     const fontRule = (fontName && fontName !== "Yandex Sans (Original)") 
-
       ? `font-family: "${fontFamily}", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;` 
-
       : "";
 
     const sizeRule = fontSizeScale !== 1.0 ? `font-size: calc(1em * ${fontSizeScale}) !important;` : "";
-
     const weightRule = fontWeight !== "normal" ? `font-weight: ${fontWeight} !important;` : "";
-
     const spacingRule = letterSpacing !== "normal" ? `letter-spacing: ${letterSpacing} !important;` : "";
 
-
-
     const style = document.createElement("style");
-
     style.id = FONT_STYLESHEET_ID;
-
     style.textContent = `
-
       * {
-
         ${fontRule}
-
         ${sizeRule}
-
         ${weightRule}
-
         ${spacingRule}
-
       }
-
       *, *::before, *::after,
-
       html, body,
-
       button, input, select, textarea,
-
       [class*="Typography_"],
-
       [class*="Font_"],
-
       [class*="Text_"],
-
       [class*="title"],
-
       [class*="artist"],
-
       div, span, p, a, h1, h2, h3, h4, h5, h6 {
-
         ${fontRule}
-
       }
-
+      /* Prevent modal and lyrics distortion from global font scaling */
+      #ym-mod-settings-modal, #ym-proposal-modal, #ym-mod-fullscreen-lyrics, .ym-mod-modal {
+        font-size: ${Math.round(14 * modalSizeScale)}px !important;
+      }
       ${extraCss}
-
     `;
-
     (document.head || document.documentElement).appendChild(style);
-
-
-
-    // Update live preview in settings if present
-
-    const previewBox = document.getElementById("font-preview-box");
-
-    if (previewBox) {
-
-      previewBox.style.fontFamily = `"${fontFamily}", sans-serif`;
-
-    }
-
-
-
-    try {
-
-      if (document.fonts && document.fonts.load && fontName && fontName !== "Yandex Sans (Original)") {
-
-        document.fonts.load(`14px "${fontFamily}"`);
-
-      }
-
-    } catch (e) {}
-
   }
 
   function applyHiddenMenuItems() {
@@ -2531,7 +2597,7 @@
 
             <div class="ym-modal-title">Настройки Мода</div>
 
-            <div class="ym-modal-version">v1.3.1 (YM 5.124.1)</div>
+            <div class="ym-modal-version">v1.3.2 (YM 5.124.1)</div>
 
           </div>
 
@@ -3438,14 +3504,48 @@
                   <select class="ym-select" id="opt-font-family">
                     <option value="Terraria">Terraria / Andy Bold (Любимый)</option>
                     <option value="Minecraft">Minecraft (Квадратный мир)</option>
-                    <option value="NewYear">❄️ Новогодний (Снегопад и уют)</option>
-                    <option value="Halloween">🎃 Хэллоуин (Готика и мистика)</option>
-                    <option value="Cyberpunk">⚡ Киберпанк (Неон и глитч)</option>
-                    <option value="Arcade">🕹️ Arcade 8-Bit (Ретро-гейминг)</option>
+                    <option value="NewYear">Новогодний (Снегопад и уют)</option>
+                    <option value="Halloween">Хэллоуин (Готика и мистика)</option>
+                    <option value="Cyberpunk">Киберпанк (Неон и глитч)</option>
+                    <option value="Arcade">Arcade 8-Bit (Ретро-гейминг)</option>
                     <option value="KellySlab">Kelly Slab (Футуризм)</option>
                     <option value="JetBrains">JetBrains Mono (Моноширинный)</option>
                     <option value="Original">Оригинал (Yandex Sans)</option>
                   </select>
+
+                </div>
+
+                <div class="ym-row">
+                  <div class="ym-col-info">
+                    <span class="ym-label">Эффекты шрифта и анимации</span>
+                    <span class="ym-desc">Снегопад, тыквы на Хэллоуин, неоновый глитч и кубический стиль</span>
+                  </div>
+                  <label class="ym-switch">
+                    <input type="checkbox" id="opt-font-effects" checked />
+                    <span class="ym-slider"></span>
+                  </label>
+                </div>
+
+                <div class="ym-row" style="flex-direction:column;align-items:flex-start;gap:8px;">
+                  <div style="display:flex;justify-content:space-between;width:100%;align-items:center;">
+                    <div class="ym-col-info">
+                      <span class="ym-label">Размер шрифта приложения</span>
+                      <span class="ym-desc">Масштабирование текста по всему интерфейсу</span>
+                    </div>
+                    <span id="ym-font-size-val" style="font-size:12px;font-weight:700;color:#ff2d3c;background:rgba(255,45,60,0.12);padding:2px 8px;border-radius:8px;">100%</span>
+                  </div>
+                  <input type="range" class="ym-range" id="opt-font-size" min="80" max="140" step="5" value="100" style="width:100%;" />
+                </div>
+
+                <div class="ym-row" style="flex-direction:column;align-items:flex-start;gap:8px;">
+                  <div style="display:flex;justify-content:space-between;width:100%;align-items:center;">
+                    <div class="ym-col-info">
+                      <span class="ym-label">Размер шрифта настроек мода</span>
+                      <span class="ym-desc">Масштаб текста внутри этого окна настроек</span>
+                    </div>
+                    <span id="ym-modal-font-size-val" style="font-size:12px;font-weight:700;color:#ff2d3c;background:rgba(255,45,60,0.12);padding:2px 8px;border-radius:8px;">100%</span>
+                  </div>
+                  <input type="range" class="ym-range" id="opt-modal-font-size" min="80" max="140" step="5" value="100" style="width:100%;" />
 
                 </div>
 
@@ -3816,7 +3916,7 @@
 
 
 
-    // v1.3.1: Admin creator tab injection
+    // v1.3.2: Admin creator tab injection
     if (isCurrentUserAdmin()) {
       const tabsContainer = backdrop.querySelector(".ym-modal-tabs");
       const contentContainer = backdrop.querySelector(".ym-modal-content");
@@ -3870,7 +3970,7 @@
     const modalLogo = backdrop.querySelector(".ym-modal-logo");
     if (modalLogo) {
       modalLogo.style.cursor = "pointer";
-      modalLogo.title = "Версия v1.3.1";
+      modalLogo.title = "Версия v1.3.2";
       modalLogo.addEventListener("click", () => {
         logoClicks++;
         clearTimeout(logoTimer);
@@ -3955,6 +4055,44 @@
     
 
     const optFontEnabled = document.getElementById("opt-font-enabled");
+
+    const optFontEffects = document.getElementById("opt-font-effects");
+    if (optFontEffects) {
+      optFontEffects.checked = modSettings["typography/fontEffects"] !== false;
+      optFontEffects.addEventListener("change", () => {
+        saveSetting("typography/fontEffects", optFontEffects.checked);
+        applyFont(optFontFamily ? optFontFamily.value : "Terraria", optFontEnabled ? optFontEnabled.checked : true);
+        showToast(optFontEffects.checked ? "Эффекты шрифта включены" : "Эффекты шрифта отключены");
+      });
+    }
+
+    const optFontSize = document.getElementById("opt-font-size");
+    const valFontSize = document.getElementById("ym-font-size-val");
+    if (optFontSize) {
+      const curSize = Math.round((parseFloat(modSettings["font-changer/sizeScale"]) || 1.0) * 100);
+      optFontSize.value = curSize;
+      if (valFontSize) valFontSize.textContent = `${curSize}%`;
+      optFontSize.addEventListener("input", () => {
+        const v = parseInt(optFontSize.value, 10) / 100;
+        if (valFontSize) valFontSize.textContent = `${optFontSize.value}%`;
+        saveSetting("font-changer/sizeScale", v);
+        applyFont(optFontFamily ? optFontFamily.value : "Terraria", optFontEnabled ? optFontEnabled.checked : true);
+      });
+    }
+
+    const optModalFontSize = document.getElementById("opt-modal-font-size");
+    const valModalFontSize = document.getElementById("ym-modal-font-size-val");
+    if (optModalFontSize) {
+      const curModalSize = Math.round((parseFloat(modSettings["font-changer/modalSizeScale"]) || 1.0) * 100);
+      optModalFontSize.value = curModalSize;
+      if (valModalFontSize) valModalFontSize.textContent = `${curModalSize}%`;
+      optModalFontSize.addEventListener("input", () => {
+        const v = parseInt(optModalFontSize.value, 10) / 100;
+        if (valModalFontSize) valModalFontSize.textContent = `${optModalFontSize.value}%`;
+        saveSetting("font-changer/modalSizeScale", v);
+        applyFont(optFontFamily ? optFontFamily.value : "Terraria", optFontEnabled ? optFontEnabled.checked : true);
+      });
+    }
 
     const optFontFamily = document.getElementById("opt-font-family");
 
@@ -4687,7 +4825,7 @@
 
           <span class="ym-mod-btn-text">Настройки Мода</span>
 
-          <span class="ym-mod-ver-tag">v1.3.1</span>
+          <span class="ym-mod-ver-tag">v1.3.2</span>
 
         `;
 

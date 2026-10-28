@@ -35,7 +35,7 @@ function initModMain() {
 
   // 1. Discord RPC
   const initialAppTitle = settingsManager.get("discordRPC/appTitle", "ru");
-  const initialClientId = initialAppTitle === "en" ? "1344383182836269158" : "1283109459463377011";
+  const initialClientId = initialAppTitle === "en" ? "1269807014393942046" : "1283109459463377011";
   discordRPC = new DiscordRPC(initialClientId);
   const rpcEnabled = settingsManager.get("discordRPC/enabled", true);
   discordRPC.enabled = rpcEnabled;
@@ -45,7 +45,7 @@ function initModMain() {
 
   settingsManager.onChange((key, value) => {
     if (key === "discordRPC/appTitle") {
-      const newCid = value === "en" ? "1344383182836269158" : "1283109459463377011";
+      const newCid = value === "en" ? "1269807014393942046" : "1283109459463377011";
       if (discordRPC) {
         discordRPC.setClientId(newCid);
         if (lastPlayerState) updateDiscordActivity(lastPlayerState);
@@ -507,118 +507,58 @@ let rpcLastSentState = {
 };
 
 function updateDiscordActivity(state) {
-  if (!discordRPC || !settingsManager.get("discordRPC/enabled", true)) return;
-  if (!state) {
-    if (rpcLastSentState.trackId !== null) {
-      rpcLastSentState = { trackId: null, isPlaying: null, position: 0, timestamp: 0 };
-      discordRPC.clearActivity();
-    }
+  if (!discordRPC || !discordRPC.enabled) return;
+  if (!state || !state.trackMeta) {
+    discordRPC.clearActivity();
     return;
   }
 
-  // Normalize state from either IPC shape or window.__getPlayerState() shape
-  let track = state.track;
-  let progress = state.progress;
-  let isPlaying = !!state.isPlaying;
+  const { title = "", artist = "", album = "", coverUrl = "" } = state.trackMeta;
+  const { isPlaying = false, position = 0, duration = 0 } = state.playback || {};
+  const trackId = state.trackMeta.id ? String(state.trackMeta.id) : "";
+  const isEn = settingsManager && settingsManager.get("discordRPC/appTitle", "ru") === "en";
 
-  if (!track && state.trackMeta) {
-    const meta = state.trackMeta;
-    let coverUri = meta.coverUri || "";
-    if (coverUri && !coverUri.startsWith("http")) {
-      coverUri = "https://" + coverUri;
-    }
-    track = {
-      id: meta.id,
-      title: meta.title,
-      artists: meta.artists,
-      coverUrl: coverUri ? coverUri.replace("%%", "400x400") : "",
-      albums: meta.albums,
-    };
-    progress = {
-      position: state.playback ? state.playback.position : 0,
-      duration: state.playback ? state.playback.duration : 0,
-    };
+  const cleanTitle = (title || "").trim();
+  const cleanArtist = (artist || "").trim();
+  const safeTitle = (cleanTitle.length === 1 ? cleanTitle + "\u200b" : cleanTitle).substring(0, 128) || (isEn ? "Music" : "Музыка");
+  const safeArtist = (cleanArtist.length === 1 ? cleanArtist + "\u200b" : cleanArtist).substring(0, 128) || (isEn ? "Yandex Music" : "Яндекс Музыка");
+
+  let validCover = coverUrl;
+  if (validCover && validCover.startsWith("//")) {
+    validCover = "https:" + validCover;
   }
-
-  if (!track) {
-    if (rpcLastSentState.trackId !== null) {
-      rpcLastSentState = { trackId: null, isPlaying: null, position: 0, timestamp: 0 };
-      discordRPC.clearActivity();
-    }
-    return;
-  }
-
-  const title = (track.title || "Неизвестный трек").trim();
-  const artist = (Array.isArray(track.artists)
-    ? track.artists.map((a) => (typeof a === "object" ? a.name : a)).join(", ")
-    : track.artists || "Неизвестный исполнитель").trim();
-  const trackId = String(track.id || `${title}-${artist}`);
-  const position = Math.floor((progress && progress.position) || 0);
-  const duration = Math.floor((progress && progress.duration) || 0);
-
-  const now = Date.now();
-  const trackChanged = rpcLastSentState.trackId !== trackId;
-  const playStateChanged = rpcLastSentState.isPlaying !== isPlaying;
-
-  let seekDetected = false;
-  if (isPlaying && rpcLastSentState.isPlaying && rpcLastSentState.timestamp > 0) {
-    const elapsedSec = (now - rpcLastSentState.timestamp) / 1000;
-    const expectedPos = rpcLastSentState.position + elapsedSec;
-    if (Math.abs(position - expectedPos) > 3) {
-      seekDetected = true;
-    }
-  }
-
-  const timeSinceLastUpdate = now - rpcLastSentState.timestamp;
-
-  // Feature 9: Track change bypasses 2000ms throttle for 0ms instant dispatch.
-  // Play state change and seek jump also dispatch immediately.
-  // Sub-2000ms updates on the same track without seek are throttled.
-  if (!trackChanged && !playStateChanged && !seekDetected && timeSinceLastUpdate < 2000) {
-    return;
-  }
-
-  rpcLastSentState = {
-    trackId,
-    isPlaying,
-    position,
-    timestamp: now,
-  };
-
-  const album = (track.albums && track.albums[0] && track.albums[0].title) || "";
-
-  let coverUrl = track.coverUrl || "";
-  if (!coverUrl && track.ogImage) {
-    coverUrl = "https://" + track.ogImage.replace("%%", "400x400");
-  }
-  if (coverUrl && coverUrl.startsWith("//")) {
-    coverUrl = "https:" + coverUrl;
+  if (!validCover || !validCover.startsWith("http")) {
+    validCover = "https://music.yandex.ru/favicon.ico";
   }
 
   const activity = {
-    type: 2, // 2 = LISTENING
-    details: title.length > 128 ? title.substring(0, 125) + "..." : title,
-    state: artist.length > 128 ? artist.substring(0, 125) + "..." : artist,
+    details: safeTitle,
+    state: safeArtist,
     assets: {
-      large_image: coverUrl || "yandex_music_logo",
-      large_text: album ? `${album} — ${title}` : title,
-      small_image: isPlaying ? "play" : "pause",
-      small_text: isPlaying ? "Слушает в Яндекс Музыке" : "На паузе",
+      large_image: validCover,
+      large_text: album ? `${album} — ${safeTitle}`.substring(0, 128) : safeTitle,
+      small_image: isPlaying 
+        ? "https://raw.githubusercontent.com/FozerG/WinYandexMusicRPC/main/assets/Playing.png" 
+        : "https://raw.githubusercontent.com/FozerG/WinYandexMusicRPC/main/assets/Paused.png",
+      small_text: isPlaying 
+        ? (isEn ? "Listening to Yandex Music" : "Слушает в Яндекс Музыке")
+        : (isEn ? "Paused" : "На паузе"),
     },
     instance: false,
   };
 
+  const now = Math.floor(Date.now() / 1000);
   if (isPlaying && duration > 0) {
     activity.timestamps = {
-      start: Math.round(now - position * 1000),
-      end: Math.round(now + (duration - position) * 1000),
+      start: now - Math.floor(position || 0),
+      end: now - Math.floor(position || 0) + Math.floor(duration),
     };
   }
 
-  if (trackId && !trackId.includes("-") && trackId !== "0") {
+  if (trackId && !trackId.includes("-") && trackId !== "0" && String(trackId).match(/^\d+$/)) {
     activity.buttons = [
       {
-        label: "🎵 Слушать в Яндекс Музыке",
+        label: isEn ? "🎵 Listen on Yandex Music" : "🎵 Слушать в Яндекс Музыке",
         url: `https://music.yandex.ru/track/${trackId}`,
       },
     ];

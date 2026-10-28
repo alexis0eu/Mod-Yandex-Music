@@ -1079,19 +1079,23 @@ button[aria-label*="Текст"] {
 /* ==========================================
    v1.3.0: CREATOR ADMIN BADGE & PROPOSALS
    ========================================== */
-.ym-creator-badge {
+.ym-creator-crown {
   display: inline-flex !important;
   align-items: center !important;
-  gap: 5px !important;
-  background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 140, 0, 0.25)) !important;
-  border: 1px solid rgba(255, 215, 0, 0.5) !important;
-  color: #ffd700 !important;
-  padding: 3px 8px !important;
-  border-radius: 20px !important;
-  font-size: 11px !important;
-  font-weight: 700 !important;
-  box-shadow: 0 0 10px rgba(255, 215, 0, 0.3) !important;
-  margin-left: 8px !important;
+  justify-content: center !important;
+  vertical-align: middle !important;
+  margin-left: 6px !important;
+  cursor: pointer !important;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  filter: drop-shadow(0 0 6px rgba(255, 45, 60, 0.85)) !important;
+}
+
+.ym-creator-crown:hover {
+  transform: scale(1.3) rotate(8deg) !important;
+}
+
+.ym-creator-badge {
+  display: none !important;
 }
 
 .ym-proposal-card {
@@ -1126,4 +1130,267 @@ button[aria-label*="Текст"] {
   color: rgba(255, 255, 255, 0.75) !important;
   line-height: 1.5 !important;
   white-space: pre-wrap !important;
+}
+
+/* ==========================================
+   v1.3.2: HALLOWEEN PUMPKIN & LYRICS CONTROLS
+   ========================================== */
+@keyframes ymPumpkinFloat {
+  0%, 100% {
+    transform: translateY(0px) rotate(-3deg);
+  }
+  50% {
+    transform: translateY(-12px) rotate(4deg);
+  }
+}
+
+.ym-lyrics-ctrl-btn {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #fff !important;
+  border-radius: 8px !important;
+  width: 30px !important;
+  height: 30px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  font-size: 15px !important;
+}
+
+.ym-lyrics-ctrl-btn:hover {
+  background: rgba(255, 45, 60, 0.8) !important;
+  border-color: #ff2d3c !important;
+  transform: scale(1.08) !important;
+}
+
+.ym-fs-lyrics-docked {
+  top: 60px !important;
+  right: 24px !important;
+  bottom: 110px !important;
+  left: auto !important;
+  transform: none !important;
+}
+
+/* ==========================================
+   v1.3.2: TYPOGRAPHY SLIDER & MODAL ISOLATION
+   ========================================== */
+#ym-mod-settings-modal,
+#ym-proposal-modal,
+#ym-osd-toast,
+#ym-mod-fullscreen-lyrics {
+  font-size: 14px !important;
+}
+
+.ym-range {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  height: 6px !important;
+  border-radius: 3px !important;
+  outline: none !important;
+  cursor: pointer !important;
+  transition: background 0.2s !important;
+}
+
+.ym-range::-webkit-slider-thumb {
+  -webkit-appearance: none !important;
+  width: 16px !important;
+  height: 16px !important;
+  border-radius: 50% !important;
+  background: var(--accent-color, #ff2d3c) !important;
+  box-shadow: 0 0 8px rgba(255, 45, 60, 0.6) !important;
+  cursor: pointer !important;
+  transition: transform 0.15s ease !important;
+}
+
+.ym-range::-webkit-slider-thumb:hover {
+  transform: scale(1.25) !important;
+}
+
+/* ==========================================
+   v1.3.2: HALLOWEEN PUMPKIN ANIMATION
+   ========================================== */
+@keyframes ymPumpkinFloat {
+  0%, 100% {
+    transform: translateY(0px) rotate(-3deg);
+  }
+  50% {
+    transform: translateY(-12px) rotate(4deg);
+  }
+}
+
+@keyframes ymPumpkinGlow {
+  0%, 100% {
+    filter: drop-shadow(0 0 10px rgba(255, 110, 0, 0.75)) drop-shadow(0 0 20px rgba(255, 60, 0, 0.4));
+  }
+  50% {
+    filter: drop-shadow(0 0 18px rgba(255, 140, 0, 0.95)) drop-shadow(0 0 32px rgba(255, 80, 0, 0.6));
+  }
+}
+
+#ym-halloween-decorations {
+  position: fixed !important;
+  inset: 0 !important;
+  pointer-events: none !important;
+  z-index: 99 !important;
+  overflow: hidden !important;
+}
+
+.ym-halloween-pumpkin {
+  position: absolute !important;
+  pointer-events: none !important;
+  animation: ymPumpkinFloat 4s ease-in-out infinite, ymPumpkinGlow 2.5s ease-in-out infinite !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+/* ==========================================
+   v1.3.2: FULLSCREEN / IN-APP LYRICS STYLING
+   ========================================== */
+#ym-mod-fullscreen-lyrics {
+  position: fixed !important;
+  width: 380px !important;
+  max-width: calc(100vw - 40px) !important;
+  background: rgba(14, 16, 24, 0.88) !important;
+  backdrop-filter: blur(32px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6), 0 0 30px var(--accent-glow, rgba(255, 45, 60, 0.25)) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  z-index: 10000 !important;
+  overflow: hidden !important;
+  animation: ymFadeInUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  font-size: 14px !important;
+}
+
+#ym-mod-fullscreen-lyrics.ym-fs-lyrics-docked {
+  top: 70px !important;
+  right: 24px !important;
+  bottom: 95px !important;
+  left: auto !important;
+  height: auto !important;
+  transform: none !important;
+}
+
+.ym-fs-lyrics-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 14px 18px !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  cursor: grab !important;
+  user-select: none !important;
+}
+
+.ym-fs-lyrics-header:active {
+  cursor: grabbing !important;
+}
+
+.ym-fs-lyrics-track {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  min-width: 0 !important;
+  flex: 1 !important;
+}
+
+.ym-fs-lyrics-cover {
+  width: 42px !important;
+  height: 42px !important;
+  border-radius: 8px !important;
+  object-fit: cover !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4) !important;
+  flex-shrink: 0 !important;
+}
+
+.ym-fs-lyrics-meta {
+  display: flex !important;
+  flex-direction: column !important;
+  min-width: 0 !important;
+}
+
+.ym-fs-lyrics-name {
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  color: #fff !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.ym-fs-lyrics-artist {
+  font-size: 12px !important;
+  color: rgba(255, 255, 255, 0.55) !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.ym-fs-lyrics-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-shrink: 0 !important;
+}
+
+.ym-fs-lyrics-btn {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #fff !important;
+  border-radius: 8px !important;
+  width: 28px !important;
+  height: 28px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  font-size: 14px !important;
+}
+
+.ym-fs-lyrics-btn:hover {
+  background: rgba(255, 45, 60, 0.8) !important;
+  border-color: #ff2d3c !important;
+  transform: scale(1.08) !important;
+}
+
+.ym-fs-lyrics-body {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  padding: 24px 18px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 14px !important;
+  scroll-behavior: smooth !important;
+}
+
+.ym-fs-lrc-line {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: rgba(255, 255, 255, 0.4) !important;
+  line-height: 1.5 !important;
+  cursor: pointer !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  padding: 8px 12px !important;
+  border-radius: 10px !important;
+}
+
+.ym-fs-lrc-line:hover {
+  color: rgba(255, 255, 255, 0.85) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+.ym-fs-lrc-line.ym-fs-lrc-active {
+  color: #ffffff !important;
+  font-size: 19px !important;
+  font-weight: 800 !important;
+  background: rgba(255, 45, 60, 0.15) !important;
+  border-left: 4px solid var(--accent-color, #ff2d3c) !important;
+  text-shadow: 0 0 16px rgba(255, 45, 60, 0.6) !important;
+  transform: scale(1.02) !important;
 }
