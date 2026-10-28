@@ -508,24 +508,53 @@ let rpcLastSentState = {
 
 function updateDiscordActivity(state) {
   if (!discordRPC || !discordRPC.enabled) return;
-  if (!state || !state.trackMeta) {
+  if (!state) {
     discordRPC.clearActivity();
     return;
   }
 
-  const { title = "", artist = "", album = "", coverUrl = "" } = state.trackMeta;
-  const { isPlaying = false, position = 0, duration = 0 } = state.playback || {};
-  const trackId = state.trackMeta.id ? String(state.trackMeta.id) : "";
+  // Handle all player state shapes: state.track (renderer), state.trackMeta (IPC), or flat state
+  const track = state.track || state.trackMeta || state;
+  const isPlaying = state.isPlaying !== undefined 
+    ? !!state.isPlaying 
+    : (state.playback ? !!state.playback.isPlaying : false);
+  const position = (state.progress && state.progress.position) 
+    || (state.playback && state.playback.position) 
+    || state.position 
+    || 0;
+  const duration = (state.progress && state.progress.duration) 
+    || (state.playback && state.playback.duration) 
+    || state.duration 
+    || 0;
+
+  const rawTitle = track.title || "";
+  let rawArtist = "";
+  if (Array.isArray(track.artists)) {
+    rawArtist = track.artists.map((a) => (typeof a === "object" ? (a.name || "") : String(a))).join(", ");
+  } else {
+    rawArtist = track.artists || track.artist || "";
+  }
+  const album = (track.albums && track.albums[0] && track.albums[0].title) || track.album || "";
+
+  if (!rawTitle) {
+    discordRPC.clearActivity();
+    return;
+  }
+
+  const trackId = track.id ? String(track.id) : "";
   const isEn = settingsManager && settingsManager.get("discordRPC/appTitle", "ru") === "en";
 
-  const cleanTitle = (title || "").trim();
-  const cleanArtist = (artist || "").trim();
+  const cleanTitle = (rawTitle || "").trim();
+  const cleanArtist = (rawArtist || "").trim();
   const safeTitle = (cleanTitle.length === 1 ? cleanTitle + "\u200b" : cleanTitle).substring(0, 128) || (isEn ? "Music" : "Музыка");
   const safeArtist = (cleanArtist.length === 1 ? cleanArtist + "\u200b" : cleanArtist).substring(0, 128) || (isEn ? "Yandex Music" : "Яндекс Музыка");
 
-  let validCover = coverUrl;
+  let validCover = track.coverUrl || track.coverUri || (track.ogImage ? "https://" + track.ogImage.replace("%%", "400x400") : "");
   if (validCover && validCover.startsWith("//")) {
     validCover = "https:" + validCover;
+  }
+  if (validCover && validCover.includes("%%")) {
+    validCover = validCover.replace("%%", "400x400");
   }
   if (!validCover || !validCover.startsWith("http")) {
     validCover = "https://music.yandex.ru/favicon.ico";

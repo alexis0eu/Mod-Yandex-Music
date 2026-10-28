@@ -1133,7 +1133,7 @@ button[aria-label*="Текст"] {
 }
 
 /* ==========================================
-   v1.3.2: HALLOWEEN PUMPKIN & LYRICS CONTROLS
+   v1.3.3: HALLOWEEN PUMPKIN & LYRICS CONTROLS
    ========================================== */
 @keyframes ymPumpkinFloat {
   0%, 100% {
@@ -1174,7 +1174,7 @@ button[aria-label*="Текст"] {
 }
 
 /* ==========================================
-   v1.3.2: TYPOGRAPHY SLIDER & MODAL ISOLATION
+   v1.3.3: TYPOGRAPHY SLIDER & MODAL ISOLATION
    ========================================== */
 #ym-mod-settings-modal,
 #ym-proposal-modal,
@@ -1210,7 +1210,7 @@ button[aria-label*="Текст"] {
 }
 
 /* ==========================================
-   v1.3.2: HALLOWEEN PUMPKIN ANIMATION
+   v1.3.3: HALLOWEEN PUMPKIN ANIMATION
    ========================================== */
 @keyframes ymPumpkinFloat {
   0%, 100% {
@@ -1247,7 +1247,7 @@ button[aria-label*="Текст"] {
 }
 
 /* ==========================================
-   v1.3.2: FULLSCREEN / IN-APP LYRICS STYLING
+   v1.3.3: FULLSCREEN / IN-APP LYRICS STYLING
    ========================================== */
 #ym-mod-fullscreen-lyrics {
   position: fixed !important;
@@ -1393,4 +1393,79 @@ button[aria-label*="Текст"] {
   border-left: 4px solid var(--accent-color, #ff2d3c) !important;
   text-shadow: 0 0 16px rgba(255, 45, 60, 0.6) !important;
   transform: scale(1.02) !important;
+}
+
+
+/* ==========================================
+   v1.3.3: PROPOSAL MODAL INTERACTIVITY FIX
+   ========================================== */
+#ym-proposal-modal {
+  pointer-events: auto !important;
+  z-index: 99999999 !important;
+}
+#ym-proposal-modal .ym-mod-modal {
+  pointer-events: auto !important;
+  -webkit-app-region: no-drag !important;
+  user-select: auto !important;
+  -webkit-user-select: auto !important;
+}
+#ym-proposal-modal input,
+#ym-proposal-modal textarea,
+#ym-proposal-modal button {
+  pointer-events: auto !important;
+  -webkit-app-region: no-drag !important;
+  user-select: text !important;
+  -webkit-user-select: text !important;
+}
+#ym-proposal-modal input,
+#ym-proposal-modal textarea {
+  cursor: text !important;
+}
+#ym-proposal-modal button {
+  cursor: pointer !important;
+}
+
+/* ==========================================
+   v1.3.3: HALLOWEEN SPIDERWEB & SPIDER ANIMATIONS
+   ========================================== */
+.ym-halloween-cobweb {
+  position: absolute !important;
+  top: 0 !important;
+  right: 0 !important;
+  width: 160px !important;
+  height: 160px !important;
+  pointer-events: none !important;
+  z-index: 99 !important;
+  opacity: 0.85 !important;
+  transition: opacity 0.35s ease, transform 0.35s ease !important;
+}
+
+.ym-spider-thread {
+  position: absolute !important;
+  top: 35px !important;
+  right: 65px !important;
+  width: 1.5px !important;
+  height: 65px !important;
+  background: rgba(255, 255, 255, 0.55) !important;
+  transform-origin: top center !important;
+  animation: ymSpiderSwing 4s ease-in-out infinite !important;
+}
+
+.ym-spider {
+  position: absolute !important;
+  bottom: -10px !important;
+  left: -9px !important;
+  font-size: 20px !important;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.9)) !important;
+  animation: ymSpiderDangle 3s ease-in-out infinite alternate !important;
+}
+
+@keyframes ymSpiderSwing {
+  0%, 100% { transform: rotate(-5deg); }
+  50% { transform: rotate(5deg); }
+}
+
+@keyframes ymSpiderDangle {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(8px); }
 }

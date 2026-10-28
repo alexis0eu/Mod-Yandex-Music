@@ -1604,12 +1604,15 @@
   }
 
   // ==========================================
-  // v1.3.2: FULLSCREEN LYRICS PAYWALL BYPASS & KARAOKE ENGINE
+  // v1.3.3: FULLSCREEN LYRICS ENGINE & SYNCED KARAOKE
   // ==========================================
   let fsLyricsVisible = false;
   let currentParsedLyrics = [];
   let currentTrackTitle = "";
   let currentTrackArtist = "";
+  let currentTrackCover = "";
+  let currentTrackLyricsId = null;
+  let isFetchingLyrics = false;
 
   function parseLrcToLines(lrc) {
     if (!lrc) return [];
@@ -1619,26 +1622,134 @@
     const lines = [];
     const rawLines = lrc.split("\n");
     const timeRegex = /\[(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]/g;
+    let hasAnyTime = false;
 
     for (const line of rawLines) {
       const trimmed = line.trim();
       if (!trimmed) continue;
-      const matches = [...trimmed.matchAll(timeRegex)];
-      if (matches.length > 0) {
-        const text = trimmed.replace(timeRegex, "").trim();
-        for (const m of matches) {
-          const min = parseInt(m[1], 10);
-          const sec = parseInt(m[2], 10);
-          const ms = m[3] ? parseInt(m[3].padEnd(3, "0"), 10) : 0;
-          const time = min * 60 + sec + ms / 1000;
-          lines.push({ time, text });
-        }
-      } else {
+      timeRegex.lastIndex = 0;
+      let match;
+      let text = trimmed.replace(timeRegex, "").trim();
+      timeRegex.lastIndex = 0;
+      let foundTime = false;
+      while ((match = timeRegex.exec(trimmed)) !== null) {
+        hasAnyTime = true;
+        foundTime = true;
+        const min = parseInt(match[1], 10);
+        const sec = parseInt(match[2], 10);
+        const ms = match[3] ? parseInt(match[3].padEnd(3, "0").slice(0, 3), 10) : 0;
+        const time = min * 60 + sec + ms / 1000;
+        lines.push({ time, text: text || "♪" });
+      }
+      if (!foundTime) {
         lines.push({ time: -1, text: trimmed });
       }
     }
-    lines.sort((a, b) => a.time - b.time);
+    if (hasAnyTime) {
+      lines.sort((a, b) => a.time - b.time);
+    }
     return lines;
+  }
+
+  async function loadLyricsForTrack(title, artist, trackId, coverUrl) {
+    const cleanTitle = (title || "").trim();
+    let cleanArtist = "";
+    if (Array.isArray(artist)) {
+      cleanArtist = artist.map((a) => (typeof a === "object" ? (a.name || "") : String(a))).join(", ");
+    } else {
+      cleanArtist = String(artist || "").trim();
+    }
+    if (!cleanTitle) return;
+
+    currentTrackTitle = cleanTitle;
+    currentTrackArtist = cleanArtist;
+    currentTrackCover = coverUrl || "";
+    currentTrackLyricsId = trackId || `${cleanTitle}-${cleanArtist}`;
+
+    updateLyricsHeaderUI();
+
+    const bodyEl = document.getElementById("ym-fs-lyrics-body");
+    if (bodyEl && fsLyricsVisible) {
+      bodyEl.innerHTML = `
+        <div style="text-align:center;color:rgba(255,255,255,0.65);margin:auto;font-size:14px;display:flex;flex-direction:column;align-items:center;gap:12px;padding:30px 10px;">
+          <div class="ym-spinner" style="width:28px;height:28px;border:3px solid rgba(255,45,60,0.25);border-top-color:#ff2d3c;border-radius:50%;animation:ymSpin 0.8s linear infinite;"></div>
+          <span>Поиск текста песни в источниках...</span>
+        </div>
+      `;
+    }
+
+    isFetchingLyrics = true;
+    let lrc = null;
+
+    try {
+      if (window.yandexMusicMod && window.yandexMusicMod.fetchLyrics) {
+        lrc = await window.yandexMusicMod.fetchLyrics(cleanTitle, cleanArtist, trackId);
+      }
+    } catch (e) {
+      console.error("[Mod] Lyrics fetch error:", e);
+    }
+    isFetchingLyrics = false;
+
+    if (lrc) {
+      currentParsedLyrics = parseLrcToLines(lrc);
+    } else {
+      currentParsedLyrics = [];
+    }
+
+    renderLyricsBodyUI();
+
+    // Broadcast to Karaoke window and Overlay
+    if (window.yandexMusicMod && window.yandexMusicMod.updateLyrics) {
+      window.yandexMusicMod.updateLyrics({
+        track: cleanTitle,
+        artist: cleanArtist,
+        lrc: lrc || `[00:00.00] ${cleanTitle} - ${cleanArtist}\n[00:03.00] ♫ Текст песни не найден`,
+      });
+    }
+  }
+
+  function updateLyricsHeaderUI() {
+    const titleEl = document.getElementById("ym-fs-lyrics-track-title");
+    const artistEl = document.getElementById("ym-fs-lyrics-track-artist");
+    const coverEl = document.getElementById("ym-fs-lyrics-track-cover");
+    if (titleEl) titleEl.textContent = currentTrackTitle || "Текст песни";
+    if (artistEl) artistEl.textContent = currentTrackArtist || "";
+    if (coverEl) {
+      if (currentTrackCover) {
+        coverEl.src = currentTrackCover;
+        coverEl.style.display = "block";
+      } else {
+        coverEl.style.display = "none";
+      }
+    }
+  }
+
+  function renderLyricsBodyUI() {
+    const bodyEl = document.getElementById("ym-fs-lyrics-body");
+    if (!bodyEl) return;
+
+    if (currentParsedLyrics && currentParsedLyrics.length > 0) {
+      bodyEl.innerHTML = currentParsedLyrics
+        .map((l, idx) => `<div class="ym-fs-lrc-line" data-idx="${idx}" data-time="${l.time}">${escapeHtml(l.text || "♪")}</div>`)
+        .join("");
+
+      bodyEl.querySelectorAll(".ym-fs-lrc-line").forEach((el) => {
+        el.addEventListener("click", () => {
+          const t = parseFloat(el.getAttribute("data-time"));
+          if (!isNaN(t) && t >= 0) {
+            seekAudioTo(t);
+          }
+        });
+      });
+    } else {
+      bodyEl.innerHTML = `
+        <div style="text-align:center;color:rgba(255,255,255,0.5);margin:auto;font-size:14px;line-height:1.6;padding:24px;">
+          <div style="font-size:26px;margin-bottom:8px;">🎵</div>
+          <b style="color:rgba(255,255,255,0.85);font-size:15px;">Текст песни не найден</b>
+          <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:6px;">В открытых источниках пока нет текста для этого трека</div>
+        </div>
+      `;
+    }
   }
 
   function toggleFullscreenLyrics(force) {
@@ -1650,40 +1761,52 @@
       return;
     }
 
-    const modal = document.querySelector('div[data-test-id*="FULLSCREEN_PLAYER"]') || document.body;
-
     if (!container) {
       container = document.createElement("div");
       container.id = "ym-mod-fullscreen-lyrics";
-      modal.appendChild(container);
+      container.className = "ym-fs-lyrics-docked";
+      document.body.appendChild(container);
+    }
+
+    // Refresh track metadata from live player state
+    const curState = scrapeCurrentPlayerState() || window.__lastPlayerState;
+    if (curState && curState.track && curState.track.title) {
+      currentTrackTitle = curState.track.title;
+      let art = curState.track.artists || "";
+      if (Array.isArray(art)) {
+        art = art.map((a) => (typeof a === "object" ? (a.name || "") : String(a))).join(", ");
+      }
+      currentTrackArtist = art;
+      currentTrackCover = curState.track.coverUrl || "";
     }
 
     container.innerHTML = `
       <div class="ym-fs-lyrics-header">
-        <div class="ym-fs-lyrics-title">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
-          <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:360px;">${escapeHtml(currentTrackTitle || "Текст песни")} - ${escapeHtml(currentTrackArtist || "")}</span>
+        <div class="ym-fs-lyrics-track">
+          <img id="ym-fs-lyrics-track-cover" class="ym-fs-lyrics-cover" src="${currentTrackCover || 'https://music.yandex.ru/favicon.ico'}" alt="Cover" style="${currentTrackCover ? '' : 'display:none;'}">
+          <div class="ym-fs-lyrics-meta">
+            <span id="ym-fs-lyrics-track-title" class="ym-fs-lyrics-name">${escapeHtml(currentTrackTitle || "Текст песни")}</span>
+            <span id="ym-fs-lyrics-track-artist" class="ym-fs-lyrics-artist">${escapeHtml(currentTrackArtist || "")}</span>
+          </div>
         </div>
-        <button class="ym-fs-lyrics-close" id="ym-fs-lyrics-close-btn">&times;</button>
+        <div class="ym-fs-lyrics-actions">
+          <button class="ym-fs-lyrics-btn" id="ym-fs-lyrics-close-btn" title="Закрыть">&times;</button>
+        </div>
       </div>
       <div class="ym-fs-lyrics-body" id="ym-fs-lyrics-body">
-        ${currentParsedLyrics.length > 0
-          ? currentParsedLyrics.map((l, idx) => `<div class="ym-fs-lrc-line" data-idx="${idx}" data-time="${l.time}">${escapeHtml(l.text || "♪")}</div>`).join("")
-          : '<div style="text-align:center;color:rgba(255,255,255,0.5);margin:auto;font-size:15px;line-height:1.6;">Текст песни не найден в открытых источниках<br><small style="color:rgba(255,255,255,0.35);">Попробуйте другой трек</small></div>'
-        }
       </div>
     `;
 
     document.getElementById("ym-fs-lyrics-close-btn")?.addEventListener("click", () => toggleFullscreenLyrics(false));
 
-    container.querySelectorAll(".ym-fs-lrc-line").forEach((el) => {
-      el.addEventListener("click", () => {
-        const t = parseFloat(el.getAttribute("data-time"));
-        if (!isNaN(t) && t >= 0) {
-          seekAudioTo(t);
-        }
-      });
-    });
+    const curId = curState?.track?.id || `${currentTrackTitle}-${currentTrackArtist}`;
+    if (currentParsedLyrics.length > 0 && currentTrackLyricsId === curId) {
+      renderLyricsBodyUI();
+    } else if (curState && curState.track && curState.track.title) {
+      loadLyricsForTrack(curState.track.title, curState.track.artists, curState.track.id, curState.track.coverUrl);
+    } else {
+      renderLyricsBodyUI();
+    }
   }
 
   function seekAudioTo(targetSeconds) {
@@ -1740,7 +1863,7 @@
   // ==========================================
   // v1.3.2: AUTO-UPDATER & COMMUNITY STATS
   // ==========================================
-  const CURRENT_MOD_VERSION = "v1.3.2";
+  const CURRENT_MOD_VERSION = "v1.3.3";
 
   async function checkModUpdates() {
     try {
@@ -1830,48 +1953,62 @@
     if (document.getElementById("ym-proposal-modal")) return;
     const modal = document.createElement("div");
     modal.id = "ym-proposal-modal";
-    modal.className = "ym-mod-modal-backdrop";
-    modal.style.cssText = "position:fixed!important;inset:0!important;background:rgba(0,0,0,0.75)!important;backdrop-filter:blur(16px)!important;-webkit-backdrop-filter:blur(16px)!important;display:flex!important;align-items:center!important;justify-content:center!important;z-index:99999999!important;opacity:1!important;visibility:visible!important;";
+    modal.className = "ym-mod-modal-backdrop open";
+    modal.style.cssText = "position:fixed!important;inset:0!important;background:rgba(0,0,0,0.75)!important;backdrop-filter:blur(16px)!important;-webkit-backdrop-filter:blur(16px)!important;display:flex!important;align-items:center!important;justify-content:center!important;z-index:99999999!important;opacity:1!important;visibility:visible!important;pointer-events:auto!important;";
     
     modal.innerHTML = `
-      <div class="ym-mod-modal" style="width:520px;max-width:92vw;border:1px solid rgba(255,45,60,0.35);box-shadow:0 20px 50px rgba(0,0,0,0.8),0 0 30px rgba(255,45,60,0.25);">
-        <div class="ym-modal-header">
+      <div class="ym-mod-modal" style="width:520px;max-width:92vw;border:1px solid rgba(255,45,60,0.35);box-shadow:0 20px 50px rgba(0,0,0,0.8),0 0 30px rgba(255,45,60,0.25);pointer-events:auto!important;-webkit-app-region:no-drag!important;user-select:auto!important;">
+        <div class="ym-modal-header" style="-webkit-app-region:no-drag!important;">
           <div class="ym-modal-header-left">
             <div class="ym-modal-title" style="display:flex;align-items:center;gap:8px;">
               <span>💡</span>
               <span>Предложить идею создателю мода</span>
             </div>
           </div>
-          <button class="ym-modal-close" id="ym-prop-close" style="cursor:pointer;">&times;</button>
+          <button class="ym-modal-close" id="ym-prop-close" style="cursor:pointer;pointer-events:auto!important;">&times;</button>
         </div>
-        <div style="padding:22px;display:flex;flex-direction:column;gap:14px;">
+        <div style="padding:22px;display:flex;flex-direction:column;gap:14px;pointer-events:auto!important;-webkit-app-region:no-drag!important;">
           <div>
             <label style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.75);display:block;margin-bottom:6px;">Заголовок идеи *</label>
-            <input type="text" id="ym-prop-title" class="ym-input" placeholder="Например: Добавить эквалайзер с пресетами" style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;background:rgba(255,255,255,0.06);color:#fff;border:1px solid rgba(255,255,255,0.15);">
+            <input type="text" id="ym-prop-title" class="ym-input" placeholder="Например: Добавить эквалайзер с пресетами" style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;background:rgba(255,255,255,0.06);color:#fff;border:1px solid rgba(255,255,255,0.15);pointer-events:auto!important;-webkit-app-region:no-drag!important;user-select:text!important;-webkit-user-select:text!important;cursor:text!important;">
           </div>
           <div>
             <label style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.75);display:block;margin-bottom:6px;">Подробное описание идеи *</label>
-            <textarea id="ym-prop-desc" class="ym-input" rows="4" placeholder="Опиши, как это должно работать и почему это круто..." style="width:100%;box-sizing:border-box;resize:vertical;padding:10px;border-radius:8px;background:rgba(255,255,255,0.06);color:#fff;border:1px solid rgba(255,255,255,0.15);"></textarea>
+            <textarea id="ym-prop-desc" class="ym-input" rows="4" placeholder="Опиши, как это должно работать и почему это круто..." style="width:100%;box-sizing:border-box;resize:vertical;padding:10px;border-radius:8px;background:rgba(255,255,255,0.06);color:#fff;border:1px solid rgba(255,255,255,0.15);pointer-events:auto!important;-webkit-app-region:no-drag!important;user-select:text!important;-webkit-user-select:text!important;cursor:text!important;"></textarea>
           </div>
           <div>
             <label style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.75);display:block;margin-bottom:6px;">Твой контакт (Telegram / Discord) — по желанию</label>
-            <input type="text" id="ym-prop-contact" class="ym-input" placeholder="@username" style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;background:rgba(255,255,255,0.06);color:#fff;border:1px solid rgba(255,255,255,0.15);">
+            <input type="text" id="ym-prop-contact" class="ym-input" placeholder="@username" style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;background:rgba(255,255,255,0.06);color:#fff;border:1px solid rgba(255,255,255,0.15);pointer-events:auto!important;-webkit-app-region:no-drag!important;user-select:text!important;-webkit-user-select:text!important;cursor:text!important;">
           </div>
-          <button id="ym-prop-submit" class="ym-btn-action" style="background:#ff2d3c;color:#fff;font-weight:700;margin-top:6px;padding:12px;font-size:14px;border-radius:10px;cursor:pointer;">🚀 Отправить создателю</button>
+          <button id="ym-prop-submit" class="ym-btn-action" style="background:#ff2d3c;color:#fff;font-weight:700;margin-top:6px;padding:12px;font-size:14px;border-radius:10px;cursor:pointer;pointer-events:auto!important;">🚀 Отправить создателю</button>
         </div>
       </div>
     `;
     document.body.appendChild(modal);
 
-    document.getElementById("ym-prop-close")?.addEventListener("click", () => modal.remove());
+    const titleInput = document.getElementById("ym-prop-title");
+    const descInput = document.getElementById("ym-prop-desc");
+    const contactInput = document.getElementById("ym-prop-contact");
+
+    [titleInput, descInput, contactInput].forEach((inp) => {
+      if (!inp) return;
+      inp.addEventListener("mousedown", (e) => e.stopPropagation());
+      inp.addEventListener("click", (e) => {
+        e.stopPropagation();
+        inp.focus();
+      });
+    });
+
+    document.getElementById("ym-prop-close")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      modal.remove();
+    });
     modal.addEventListener("click", (e) => {
       if (e.target === modal) modal.remove();
     });
 
-    document.getElementById("ym-prop-submit")?.addEventListener("click", () => {
-      const titleInput = document.getElementById("ym-prop-title");
-      const descInput = document.getElementById("ym-prop-desc");
-      const contactInput = document.getElementById("ym-prop-contact");
+    document.getElementById("ym-prop-submit")?.addEventListener("click", (e) => {
+      e.stopPropagation();
       const title = titleInput?.value.trim();
       const desc = descInput?.value.trim();
       const contact = contactInput?.value.trim();
@@ -1893,37 +2030,39 @@
         return;
       }
 
-      // Save locally so it appears in the creator admin tab immediately
+      // Save locally to localStorage AND mod storage
       try {
         const localList = JSON.parse(localStorage.getItem("ym_user_proposals") || "[]");
         localList.unshift({
           title,
-          body: desc + (contact ? `
-
-Контакт: ${contact}` : ""),
+          body: desc + (contact ? "\n\nКонтакт: " + contact : ""),
           user: { login: contact || "Пользователь мода" },
           created_at: new Date().toISOString(),
           state: "open",
-          isLocal: true
+          isLocal: true,
         });
         localStorage.setItem("ym_user_proposals", JSON.stringify(localList.slice(0, 50)));
+        if (window.yandexMusicMod && window.yandexMusicMod.setStorageValue) {
+          window.yandexMusicMod.setStorageValue("user_proposals", localList.slice(0, 50));
+        }
       } catch (e) {}
 
-      const bodyText = `${desc}
+      // Refresh admin tab if visible
+      loadAdminProposals();
 
----
-**Контакт автора:** ${contact || "Не указан"}
-**Версия мода:** v1.3.2`;
+      const bodyText = `${desc}\n\n---\n**Контакт автора:** ${contact || "Не указан"}\n**Версия мода:** v1.3.3`;
       const issueUrl = `https://github.com/alexis0eu/Mod-Yandex-Music/issues/new?title=${encodeURIComponent("[Идея] " + title)}&body=${encodeURIComponent(bodyText)}&labels=suggestion`;
 
-      if (window.yandexMusicMod && typeof window.yandexMusicMod.openExternal === "function") {
-        window.yandexMusicMod.openExternal(issueUrl);
-      } else {
-        window.open(issueUrl, "_blank");
-      }
+      try {
+        if (window.yandexMusicMod && typeof window.yandexMusicMod.openExternal === "function") {
+          window.yandexMusicMod.openExternal(issueUrl);
+        } else {
+          window.open(issueUrl, "_blank");
+        }
+      } catch (e) {}
 
       modal.remove();
-      showToast("🎉 Идея сохранена и открыта страница на GitHub!");
+      showToast("🎉 Ваша идея успешно отправлена создателю!");
     });
   }
 
@@ -1969,20 +2108,69 @@
   // ==========================================
   // v1.3.2: HALLOWEEN DECORATIONS & FLYING PUMPKINS
   // ==========================================
+  let halloweenObserverInterval = null;
+
+  function isMyWaveActive() {
+    return !!(
+      document.querySelector('div[data-test-id="VIBE_BLOCK"], div[data-test-id="FULLSCREEN_PLAYER_MODAL"], [data-test-id="VIBE_PAGE"], canvas[class*="vibe"], div[class*="Vibe"], [class*="VibeLayout"]') ||
+      window.location.href.toLowerCase().includes("vibe") ||
+      window.location.hash.toLowerCase().includes("vibe") ||
+      window.location.pathname === "/" ||
+      window.location.pathname === ""
+    );
+  }
+
   function startHalloweenDecorations() {
     if (document.getElementById("ym-halloween-decorations")) return;
     const container = document.createElement("div");
     container.id = "ym-halloween-decorations";
     container.style.cssText = "position:fixed!important;inset:0!important;pointer-events:none!important;z-index:900!important;overflow:hidden!important;";
     container.innerHTML = `
-      <div class="ym-halloween-pumpkin ym-pumpkin-1" style="position:absolute;bottom:100px;right:40px;font-size:38px;filter:drop-shadow(0 0 16px rgba(255,117,24,0.85));animation:ymPumpkinFloat 4s ease-in-out infinite;">🎃</div>
-      <div class="ym-halloween-pumpkin ym-pumpkin-2" style="position:absolute;top:80px;right:70px;font-size:28px;filter:drop-shadow(0 0 14px rgba(255,117,24,0.75));animation:ymPumpkinFloat 5s ease-in-out infinite reverse;opacity:0.9;">🎃</div>
-      <div class="ym-halloween-pumpkin ym-pumpkin-3" style="position:absolute;top:140px;left:260px;font-size:24px;filter:drop-shadow(0 0 12px rgba(255,117,24,0.7));animation:ymPumpkinFloat 4.5s ease-in-out infinite 1s;opacity:0.85;">🎃</div>
+      <!-- Top Right Cobweb with Hanging Spider -->
+      <div id="ym-halloween-cobweb" class="ym-halloween-cobweb" style="position:absolute;top:0;right:0;width:160px;height:160px;pointer-events:none;opacity:0.85;transition:opacity 0.3s ease;">
+        <svg viewBox="0 0 100 100" style="width:100%;height:100%;stroke:rgba(255,255,255,0.7);stroke-width:1.2;fill:none;filter:drop-shadow(0 0 4px rgba(255,255,255,0.3));">
+          <path d="M 100,0 L 0,0 L 100,100 Z" fill="rgba(255,255,255,0.03)" />
+          <line x1="100" y1="0" x2="0" y2="0" />
+          <line x1="100" y1="0" x2="10" y2="25" />
+          <line x1="100" y1="0" x2="25" y2="55" />
+          <line x1="100" y1="0" x2="55" y2="80" />
+          <line x1="100" y1="0" x2="80" y2="95" />
+          <line x1="100" y1="0" x2="100" y2="100" />
+          <path d="M 80,0 Q 82,15 90,20 Q 95,12 100,10" />
+          <path d="M 60,0 Q 64,28 75,40 Q 88,48 100,28" />
+          <path d="M 40,0 Q 48,45 62,60 Q 78,70 100,50" />
+          <path d="M 20,0 Q 30,62 48,78 Q 70,88 100,75" />
+          <path d="M 0,0 Q 15,80 35,92 Q 62,100 100,98" />
+        </svg>
+        <div class="ym-spider-thread" style="position:absolute;top:35px;right:65px;width:1.5px;height:65px;background:rgba(255,255,255,0.55);transform-origin:top center;animation:ymSpiderSwing 4s ease-in-out infinite;">
+          <div class="ym-spider" style="position:absolute;bottom:-10px;left:-9px;font-size:20px;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.9));animation:ymSpiderDangle 3s ease-in-out infinite alternate;">🕷️</div>
+        </div>
+      </div>
+
+      <!-- Bottom Pumpkins -->
+      <div id="ym-halloween-pumpkins">
+        <div class="ym-halloween-pumpkin ym-pumpkin-b1" style="position:absolute;bottom:96px;right:35px;font-size:38px;filter:drop-shadow(0 0 16px rgba(255,117,24,0.85));animation:ymPumpkinFloat 4s ease-in-out infinite;">🎃</div>
+        <div class="ym-halloween-pumpkin ym-pumpkin-b2" style="position:absolute;bottom:96px;left:240px;font-size:32px;filter:drop-shadow(0 0 14px rgba(255,117,24,0.75));animation:ymPumpkinFloat 4.8s ease-in-out infinite 1s;">🎃</div>
+        <div class="ym-halloween-pumpkin ym-pumpkin-b3" style="position:absolute;bottom:92px;right:120px;font-size:26px;filter:drop-shadow(0 0 12px rgba(255,117,24,0.7));animation:ymPumpkinFloat 4.2s ease-in-out infinite 0.5s;">🎃</div>
+      </div>
     `;
     document.body.appendChild(container);
+
+    if (halloweenObserverInterval) clearInterval(halloweenObserverInterval);
+    halloweenObserverInterval = setInterval(() => {
+      const cobweb = document.getElementById("ym-halloween-cobweb");
+      if (cobweb) {
+        const waveActive = isMyWaveActive();
+        cobweb.style.display = waveActive ? "block" : "none";
+      }
+    }, 600);
   }
 
   function stopHalloweenDecorations() {
+    if (halloweenObserverInterval) {
+      clearInterval(halloweenObserverInterval);
+      halloweenObserverInterval = null;
+    }
     const el = document.getElementById("ym-halloween-decorations");
     if (el) el.remove();
   }
@@ -2597,7 +2785,7 @@
 
             <div class="ym-modal-title">Настройки Мода</div>
 
-            <div class="ym-modal-version">v1.3.2 (YM 5.124.1)</div>
+            <div class="ym-modal-version">v1.3.3 (YM 5.124.1)</div>
 
           </div>
 
@@ -3924,12 +4112,9 @@
         const adminBtn = document.createElement("button");
         adminBtn.className = "ym-tab-btn";
         adminBtn.setAttribute("data-tab", "tab-admin");
-        adminBtn.style.color = "#ffd700";
         adminBtn.innerHTML = `
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z" fill="#ffd700"></path>
-          </svg>
-          <span>👑 Создатель</span>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="#ff2d3c" style="filter:drop-shadow(0 0 6px rgba(255,45,60,0.8));vertical-align:middle;margin-right:6px;"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/></svg>
+          <span>Панель Создателя</span>
         `;
         tabsContainer.appendChild(adminBtn);
 
@@ -3938,7 +4123,7 @@
         adminPane.id = "tab-admin";
         adminPane.innerHTML = `
           <div class="ym-card">
-            <div class="ym-card-title" style="color:#ffd700;">👑 Панель создателя мода</div>
+            <div class="ym-card-title" style="color:#ff2d3c;display:flex;align-items:center;gap:8px;"><svg viewBox="0 0 24 24" width="20" height="20" fill="#ff2d3c" style="filter:drop-shadow(0 0 8px rgba(255,45,60,0.8));"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/></svg><span>Панель Создателя мода</span></div>
             <p style="font-size:13px;color:rgba(255,255,255,0.7);margin:0 0 14px 0;">
               Привет, Алексей! Здесь отображаются предложения и идеи пользователей твоего мода.
             </p>
@@ -3970,7 +4155,7 @@
     const modalLogo = backdrop.querySelector(".ym-modal-logo");
     if (modalLogo) {
       modalLogo.style.cursor = "pointer";
-      modalLogo.title = "Версия v1.3.2";
+      modalLogo.title = "Версия v1.3.3";
       modalLogo.addEventListener("click", () => {
         logoClicks++;
         clearTimeout(logoTimer);
@@ -4825,7 +5010,7 @@
 
           <span class="ym-mod-btn-text">Настройки Мода</span>
 
-          <span class="ym-mod-ver-tag">v1.3.2</span>
+          <span class="ym-mod-ver-tag">v1.3.3</span>
 
         `;
 
@@ -5414,19 +5599,17 @@
 
 
           // If new track detected, fetch lyrics and notify
-
-          if (state.track.id && state.track.id !== lastTrackId && state.track.title) {
-
-            lastTrackId = state.track.id;
-
-            fetchTrackLyrics(state.track.title, state.track.artists, state.track.rawMeta, state.track.id);
-
-            // showOsdTrackToast disabled to prevent layout shift
-
+          const curTrackId = state.track.id || `${state.track.title}-${state.track.artists}`;
+          if (curTrackId && curTrackId !== lastTrackId && state.track.title) {
+            lastTrackId = curTrackId;
+            loadLyricsForTrack(state.track.title, state.track.artists, state.track.id, state.track.coverUrl);
           }
 
+          // Active lyrics line synchronization
+          if (fsLyricsVisible && state.progress && state.progress.position !== undefined) {
+            updateFullscreenLyricsActiveLine(state.progress.position);
+          }
         }
-
       } catch (err) {}
 
     }, 350);
@@ -5524,121 +5707,8 @@
 
 
   async function fetchTrackLyrics(title, artist, meta, directTrackId = null) {
-
-    try {
-
-      let lrcFound = null;
-
-      const trackId = directTrackId || (meta && meta.id ? meta.id : null);
-
-
-
-      // 1. Try Yandex Music API supplement with authorization headers
-
-      if (trackId) {
-
-        try {
-
-          let oauthToken = null;
-
-          try {
-
-            if (window.localStorage && window.localStorage.oauth) {
-
-              const parsed = JSON.parse(window.localStorage.oauth);
-
-              if (parsed && parsed.value) oauthToken = "OAuth " + parsed.value;
-
-            }
-
-          } catch (e) {}
-
-
-
-          const headers = {
-
-            "X-Yandex-Music-Client": "YandexMusicDesktopAppWindows/5.124.1",
-
-            "X-Yandex-Music-Frontend": "new",
-
-          };
-
-          if (oauthToken) headers["Authorization"] = oauthToken;
-
-
-
-          const resp = await originalFetch(`https://api.music.yandex.net/tracks/${trackId}/supplement`, { headers });
-
-          if (resp.ok) {
-
-            const data = await resp.json();
-
-            const result = data.result || data;
-
-            if (result && result.lyrics) {
-
-              if (result.lyrics.syncLyrics && result.lyrics.syncLyrics.length > 0) {
-
-                lrcFound = result.lyrics.syncLyrics.map((item) => ({
-
-                  time: item.timestamp !== undefined ? item.timestamp / 1000 : (item.offset ? item.offset / 1000 : 0),
-
-                  text: item.line || item.text || "",
-
-                }));
-
-              } else if (result.lyrics.fullLyrics) {
-
-                lrcFound = result.lyrics.fullLyrics;
-
-              }
-
-            }
-
-          }
-
-        } catch (e) {}
-
-      }
-
-
-
-      // 2. Fallback to LRCLib via IPC bridge
-
-      if (!lrcFound && window.yandexMusicMod && window.yandexMusicMod.fetchLyrics && title) {
-
-        try {
-
-          lrcFound = await window.yandexMusicMod.fetchLyrics(title, artist, trackId);
-
-        } catch (e) {}
-
-      }
-
-
-
-      // 3. Emit lyrics to Karaoke window and Overlay
-
-      if (window.yandexMusicMod && window.yandexMusicMod.updateLyrics) {
-
-        window.yandexMusicMod.updateLyrics({
-
-          track: title,
-
-          artist: artist,
-
-          lrc: lrcFound || `[00:00.00] ${title} - ${artist}\n[00:03.00] ♫ Текст песни не найден`,
-
-        });
-
-      }
-
-    } catch (e) {
-
-      console.error("[YandexMusicMod] Error fetching track lyrics:", e);
-
-    }
-
+    const trackId = directTrackId || (meta && meta.id ? meta.id : null);
+    await loadLyricsForTrack(title, artist, trackId, meta && meta.coverUrl);
   }
 
 
