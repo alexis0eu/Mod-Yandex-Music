@@ -509,7 +509,10 @@ let rpcLastSentState = {
 function updateDiscordActivity(state) {
   if (!discordRPC || !discordRPC.enabled) return;
   if (!state) {
-    discordRPC.clearActivity();
+    if (rpcLastSentState.trackId !== null) {
+      rpcLastSentState = { trackId: null, isPlaying: null, position: 0, timestamp: 0 };
+      discordRPC.clearActivity();
+    }
     return;
   }
 
@@ -537,11 +540,42 @@ function updateDiscordActivity(state) {
   const album = (track.albums && track.albums[0] && track.albums[0].title) || track.album || "";
 
   if (!rawTitle) {
-    discordRPC.clearActivity();
+    if (rpcLastSentState.trackId !== null) {
+      rpcLastSentState = { trackId: null, isPlaying: null, position: 0, timestamp: 0 };
+      discordRPC.clearActivity();
+    }
     return;
   }
 
-  const trackId = track.id ? String(track.id) : "";
+  const trackId = track.id ? String(track.id) : `${rawTitle}-${rawArtist}`;
+  const now = Math.floor(Date.now() / 1000);
+  const trackChanged = rpcLastSentState.trackId !== trackId;
+  const playStateChanged = rpcLastSentState.isPlaying !== isPlaying;
+
+  let seekDetected = false;
+  if (isPlaying && rpcLastSentState.isPlaying && rpcLastSentState.timestamp > 0) {
+    const elapsedSec = now - rpcLastSentState.timestamp;
+    const expectedPos = rpcLastSentState.position + elapsedSec;
+    if (Math.abs(position - expectedPos) > 4) {
+      seekDetected = true;
+    }
+  }
+
+  const timeSinceLastUpdate = now - rpcLastSentState.timestamp;
+
+  // Discord allows at most 1 update every ~15 seconds without rate-limiting.
+  // Bypass throttle ONLY on track change, play/pause toggle, or seek (> 4s).
+  if (!trackChanged && !playStateChanged && !seekDetected && timeSinceLastUpdate < 15) {
+    return;
+  }
+
+  rpcLastSentState = {
+    trackId,
+    isPlaying,
+    position,
+    timestamp: now,
+  };
+
   const isEn = settingsManager && settingsManager.get("discordRPC/appTitle", "ru") === "en";
 
   const cleanTitle = (rawTitle || "").trim();
@@ -576,7 +610,6 @@ function updateDiscordActivity(state) {
     instance: false,
   };
 
-  const now = Math.floor(Date.now() / 1000);
   if (isPlaying && duration > 0) {
     activity.timestamps = {
       start: now - Math.floor(position || 0),

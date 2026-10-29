@@ -36,7 +36,7 @@ class DiscordRPC {
       if (this.enabled && !this.connected && !this.connecting) {
         this.connect();
       }
-    }, 15000);
+    }, 5000);
     if (this.watchdogInterval && typeof this.watchdogInterval.unref === "function") {
       this.watchdogInterval.unref();
     }
@@ -139,7 +139,7 @@ class DiscordRPC {
     tryNextPipe();
   }
 
-  scheduleReconnect(delayMs = 10000) {
+  scheduleReconnect(delayMs = 3000) {
     if (!this.enabled) return;
     if (this.connected || this.connecting) return;
     if (this.reconnectTimer) return;

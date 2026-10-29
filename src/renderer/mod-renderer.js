@@ -1604,15 +1604,18 @@
   }
 
   // ==========================================
-  // v1.3.3: FULLSCREEN LYRICS ENGINE & SYNCED KARAOKE
+  // v1.3.4: APPLE MUSIC GLASSMORPHIC MINI-PLAYER & SYNCED LYRICS
   // ==========================================
   let fsLyricsVisible = false;
+  let isLyricsExpanded = true;
   let currentParsedLyrics = [];
   let currentTrackTitle = "";
   let currentTrackArtist = "";
+  let currentTrackAlbum = "";
   let currentTrackCover = "";
   let currentTrackLyricsId = null;
   let isFetchingLyrics = false;
+  let lastActiveLyricIdx = -1;
 
   function parseLrcToLines(lrc) {
     if (!lrc) return [];
@@ -1651,7 +1654,7 @@
     return lines;
   }
 
-  async function loadLyricsForTrack(title, artist, trackId, coverUrl) {
+  async function loadLyricsForTrack(title, artist, trackId, coverUrl, album = "") {
     const cleanTitle = (title || "").trim();
     let cleanArtist = "";
     if (Array.isArray(artist)) {
@@ -1663,17 +1666,19 @@
 
     currentTrackTitle = cleanTitle;
     currentTrackArtist = cleanArtist;
+    currentTrackAlbum = album || "";
     currentTrackCover = coverUrl || "";
     currentTrackLyricsId = trackId || `${cleanTitle}-${cleanArtist}`;
+    lastActiveLyricIdx = -1;
 
     updateLyricsHeaderUI();
 
-    const bodyEl = document.getElementById("ym-fs-lyrics-body");
+    const bodyEl = document.getElementById("ym-am-lyrics-body");
     if (bodyEl && fsLyricsVisible) {
       bodyEl.innerHTML = `
         <div style="text-align:center;color:rgba(255,255,255,0.65);margin:auto;font-size:14px;display:flex;flex-direction:column;align-items:center;gap:12px;padding:30px 10px;">
-          <div class="ym-spinner" style="width:28px;height:28px;border:3px solid rgba(255,45,60,0.25);border-top-color:#ff2d3c;border-radius:50%;animation:ymSpin 0.8s linear infinite;"></div>
-          <span>Поиск текста песни в источниках...</span>
+          <div class="ym-spinner" style="width:28px;height:28px;border:3px solid rgba(255,255,255,0.25);border-top-color:#ffffff;border-radius:50%;animation:ymSpin 0.8s linear infinite;"></div>
+          <span>Поиск текста песни...</span>
         </div>
       `;
     }
@@ -1709,31 +1714,34 @@
   }
 
   function updateLyricsHeaderUI() {
-    const titleEl = document.getElementById("ym-fs-lyrics-track-title");
-    const artistEl = document.getElementById("ym-fs-lyrics-track-artist");
-    const coverEl = document.getElementById("ym-fs-lyrics-track-cover");
-    if (titleEl) titleEl.textContent = currentTrackTitle || "Текст песни";
-    if (artistEl) artistEl.textContent = currentTrackArtist || "";
+    const titleEl = document.getElementById("ym-am-title");
+    const artistEl = document.getElementById("ym-am-artist");
+    const coverEl = document.getElementById("ym-am-cover");
+    const backdropEl = document.getElementById("ym-am-art-backdrop");
+
+    if (titleEl) titleEl.textContent = currentTrackTitle || "Трек не выбран";
+    if (artistEl) {
+      const art = currentTrackArtist || "Яндекс Музыка";
+      artistEl.textContent = currentTrackAlbum ? `${art} — ${currentTrackAlbum}` : art;
+    }
     if (coverEl) {
-      if (currentTrackCover) {
-        coverEl.src = currentTrackCover;
-        coverEl.style.display = "block";
-      } else {
-        coverEl.style.display = "none";
-      }
+      coverEl.src = currentTrackCover || "https://music.yandex.ru/favicon.ico";
+    }
+    if (backdropEl && currentTrackCover) {
+      backdropEl.style.backgroundImage = `url("${currentTrackCover}")`;
     }
   }
 
   function renderLyricsBodyUI() {
-    const bodyEl = document.getElementById("ym-fs-lyrics-body");
+    const bodyEl = document.getElementById("ym-am-lyrics-body");
     if (!bodyEl) return;
 
     if (currentParsedLyrics && currentParsedLyrics.length > 0) {
       bodyEl.innerHTML = currentParsedLyrics
-        .map((l, idx) => `<div class="ym-fs-lrc-line" data-idx="${idx}" data-time="${l.time}">${escapeHtml(l.text || "♪")}</div>`)
+        .map((l, idx) => `<div class="ym-am-lrc-line" data-idx="${idx}" data-time="${l.time}">${escapeHtml(l.text || "♪")}</div>`)
         .join("");
 
-      bodyEl.querySelectorAll(".ym-fs-lrc-line").forEach((el) => {
+      bodyEl.querySelectorAll(".ym-am-lrc-line").forEach((el) => {
         el.addEventListener("click", () => {
           const t = parseFloat(el.getAttribute("data-time"));
           if (!isNaN(t) && t >= 0) {
@@ -1742,13 +1750,44 @@
         });
       });
     } else {
+      // Apple Music Empty State (Image 3)
       bodyEl.innerHTML = `
-        <div style="text-align:center;color:rgba(255,255,255,0.5);margin:auto;font-size:14px;line-height:1.6;padding:24px;">
-          <div style="font-size:26px;margin-bottom:8px;">🎵</div>
-          <b style="color:rgba(255,255,255,0.85);font-size:15px;">Текст песни не найден</b>
-          <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:6px;">В открытых источниках пока нет текста для этого трека</div>
+        <div class="ym-am-empty-lyrics">
+          Текст этой песни недоступен.
         </div>
       `;
+    }
+  }
+
+  function updateAppleMusicProgress(position, duration, isPlaying) {
+    if (!fsLyricsVisible) return;
+    const curEl = document.getElementById("ym-am-time-cur");
+    const remEl = document.getElementById("ym-am-time-rem");
+    const fillEl = document.getElementById("ym-am-trackbar-fill");
+    const thumbEl = document.getElementById("ym-am-trackbar-thumb");
+    const playBtn = document.getElementById("ym-am-btn-play");
+
+    const pos = Math.max(0, Math.floor(position || 0));
+    const dur = Math.max(0, Math.floor(duration || 0));
+    const rem = Math.max(0, dur - pos);
+
+    const fmt = (sec) => {
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      return `${m}:${s < 10 ? "0" : ""}${s}`;
+    };
+
+    if (curEl) curEl.textContent = fmt(pos);
+    if (remEl) remEl.textContent = `-${fmt(rem)}`;
+
+    const pct = dur > 0 ? Math.min(100, Math.max(0, (position / dur) * 100)) : 0;
+    if (fillEl) fillEl.style.width = `${pct}%`;
+    if (thumbEl) thumbEl.style.left = `${pct}%`;
+
+    if (playBtn) {
+      playBtn.innerHTML = isPlaying
+        ? `<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`
+        : `<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
     }
   }
 
@@ -1768,6 +1807,12 @@
       document.body.appendChild(container);
     }
 
+    if (!isLyricsExpanded) {
+      container.classList.add("ym-am-compact");
+    } else {
+      container.classList.remove("ym-am-compact");
+    }
+
     // Refresh track metadata from live player state
     const curState = scrapeCurrentPlayerState() || window.__lastPlayerState;
     if (curState && curState.track && curState.track.title) {
@@ -1777,35 +1822,126 @@
         art = art.map((a) => (typeof a === "object" ? (a.name || "") : String(a))).join(", ");
       }
       currentTrackArtist = art;
+      currentTrackAlbum = (curState.track.rawMeta && curState.track.rawMeta.albums && curState.track.rawMeta.albums[0]?.title) || "";
       currentTrackCover = curState.track.coverUrl || "";
     }
 
     container.innerHTML = `
-      <div class="ym-fs-lyrics-header">
-        <div class="ym-fs-lyrics-track">
-          <img id="ym-fs-lyrics-track-cover" class="ym-fs-lyrics-cover" src="${currentTrackCover || 'https://music.yandex.ru/favicon.ico'}" alt="Cover" style="${currentTrackCover ? '' : 'display:none;'}">
-          <div class="ym-fs-lyrics-meta">
-            <span id="ym-fs-lyrics-track-title" class="ym-fs-lyrics-name">${escapeHtml(currentTrackTitle || "Текст песни")}</span>
-            <span id="ym-fs-lyrics-track-artist" class="ym-fs-lyrics-artist">${escapeHtml(currentTrackArtist || "")}</span>
+      <div class="ym-am-art-backdrop" id="ym-am-art-backdrop" style="background-image: url('${currentTrackCover || ''}');"></div>
+      
+      <!-- Apple Music Header -->
+      <div class="ym-am-header" id="ym-am-header">
+        <div class="ym-am-track-info">
+          <img id="ym-am-cover" class="ym-am-cover" src="${currentTrackCover || 'https://music.yandex.ru/favicon.ico'}" alt="Cover">
+          <div class="ym-am-meta">
+            <div id="ym-am-title" class="ym-am-title">${escapeHtml(currentTrackTitle || "Трек не выбран")}</div>
+            <div id="ym-am-artist" class="ym-am-artist">${escapeHtml(currentTrackArtist || "Яндекс Музыка")}${currentTrackAlbum ? " — " + escapeHtml(currentTrackAlbum) : ""}</div>
+            <div class="ym-am-badge-row">
+              <div class="ym-am-badge">
+                <svg width="14" height="10" viewBox="0 0 14 10" fill="none" stroke="currentColor" stroke-width="1.3">
+                  <path d="M1 5c1-3 2-3 3 0s2 3 3 0 2-3 3 0 2 3 3 0"/>
+                </svg>
+                <span>Lossless</span>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="ym-fs-lyrics-actions">
-          <button class="ym-fs-lyrics-btn" id="ym-fs-lyrics-close-btn" title="Закрыть">&times;</button>
+        <div class="ym-am-window-controls">
+          <button class="ym-am-btn-tool" id="ym-am-btn-compact" title="Свернуть/Развернуть текст">⤢</button>
+          <button class="ym-am-btn-tool ym-am-btn-close" id="ym-am-btn-close" title="Закрыть">✕</button>
         </div>
       </div>
-      <div class="ym-fs-lyrics-body" id="ym-fs-lyrics-body">
+
+      <!-- Scrolling Lyrics Body -->
+      <div class="ym-am-lyrics-body" id="ym-am-lyrics-body">
+      </div>
+
+      <!-- Bottom Player Controls Bar -->
+      <div class="ym-am-controls-bar">
+        <div class="ym-am-progress-section">
+          <span class="ym-am-time" id="ym-am-time-cur">0:00</span>
+          <div class="ym-am-trackbar" id="ym-am-trackbar">
+            <div class="ym-am-trackbar-fill" id="ym-am-trackbar-fill"></div>
+            <div class="ym-am-trackbar-thumb" id="ym-am-trackbar-thumb"></div>
+          </div>
+          <span class="ym-am-time ym-am-time-right" id="ym-am-time-rem">-0:00</span>
+        </div>
+        <div class="ym-am-buttons-row">
+          <button class="ym-am-btn" id="ym-am-btn-vol" title="Громкость">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
+          </button>
+          <button class="ym-am-btn" id="ym-am-btn-more" title="Параметры">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+          </button>
+          <button class="ym-am-btn" id="ym-am-btn-prev" title="Предыдущий трек">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+          </button>
+          <button class="ym-am-btn ym-am-btn-play" id="ym-am-btn-play" title="Воспроизведение / Пауза">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+          <button class="ym-am-btn" id="ym-am-btn-next" title="Следующий трек">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+          </button>
+          <button class="ym-am-btn ym-am-btn-lyrics ${isLyricsExpanded ? 'active' : ''}" id="ym-am-btn-lyrics" title="Текст песни (Apple Music)">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-6.5 9c-.83 0-1.5-.67-1.5-1.5S12.67 8 13.5 8s1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm-5 0C7.67 11 7 10.33 7 9.5S7.67 8 8.5 8s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
+          </button>
+          <button class="ym-am-btn" id="ym-am-btn-queue" title="Очередь">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+          </button>
+        </div>
       </div>
     `;
 
-    document.getElementById("ym-fs-lyrics-close-btn")?.addEventListener("click", () => toggleFullscreenLyrics(false));
+    document.getElementById("ym-am-btn-close")?.addEventListener("click", () => toggleFullscreenLyrics(false));
+
+    const toggleCompactBtn = document.getElementById("ym-am-btn-compact");
+    const lyricsBtn = document.getElementById("ym-am-btn-lyrics");
+
+    const toggleCompactMode = () => {
+      isLyricsExpanded = !isLyricsExpanded;
+      container.classList.toggle("ym-am-compact", !isLyricsExpanded);
+      lyricsBtn?.classList.toggle("active", isLyricsExpanded);
+      if (isLyricsExpanded && lastActiveLyricIdx !== -1) {
+        setTimeout(() => {
+          const body = document.getElementById("ym-am-lyrics-body");
+          const activeEl = body?.querySelector(`[data-idx="${lastActiveLyricIdx}"]`);
+          activeEl?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 100);
+      }
+    };
+
+    toggleCompactBtn?.addEventListener("click", toggleCompactMode);
+    lyricsBtn?.addEventListener("click", toggleCompactMode);
+
+    // Interactive Trackbar Scrubber
+    const trackbar = document.getElementById("ym-am-trackbar");
+    trackbar?.addEventListener("click", (e) => {
+      const rect = trackbar.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const ratio = Math.max(0, Math.min(1, clickX / rect.width));
+      const cur = scrapeCurrentPlayerState() || window.__lastPlayerState;
+      const dur = (cur?.progress?.duration) || 0;
+      if (dur > 0) {
+        seekAudioTo(ratio * dur);
+      }
+    });
+
+    // Control buttons wiring
+    document.getElementById("ym-am-btn-play")?.addEventListener("click", () => handlePlayerAction("playPause"));
+    document.getElementById("ym-am-btn-prev")?.addEventListener("click", () => handlePlayerAction("prev"));
+    document.getElementById("ym-am-btn-next")?.addEventListener("click", () => handlePlayerAction("next"));
 
     const curId = curState?.track?.id || `${currentTrackTitle}-${currentTrackArtist}`;
     if (currentParsedLyrics.length > 0 && currentTrackLyricsId === curId) {
       renderLyricsBodyUI();
     } else if (curState && curState.track && curState.track.title) {
-      loadLyricsForTrack(curState.track.title, curState.track.artists, curState.track.id, curState.track.coverUrl);
+      loadLyricsForTrack(curState.track.title, curState.track.artists, curState.track.id, curState.track.coverUrl, currentTrackAlbum);
     } else {
       renderLyricsBodyUI();
+    }
+
+    if (curState && curState.progress) {
+      updateAppleMusicProgress(curState.progress.position, curState.progress.duration, curState.isPlaying);
     }
   }
 
@@ -1820,7 +1956,7 @@
 
   function updateFullscreenLyricsActiveLine(currentTime) {
     if (!fsLyricsVisible) return;
-    const body = document.getElementById("ym-fs-lyrics-body");
+    const body = document.getElementById("ym-am-lyrics-body");
     if (!body || !currentParsedLyrics.length) return;
 
     let activeIdx = -1;
@@ -1835,16 +1971,17 @@
       }
     }
 
-    if (activeIdx !== -1) {
-      const lines = body.querySelectorAll(".ym-fs-lrc-line");
+    if (activeIdx !== -1 && activeIdx !== lastActiveLyricIdx) {
+      lastActiveLyricIdx = activeIdx;
+      const lines = body.querySelectorAll(".ym-am-lrc-line");
       lines.forEach((l, idx) => {
         if (idx === activeIdx) {
-          if (!l.classList.contains("ym-fs-lrc-active")) {
-            l.classList.add("ym-fs-lrc-active");
+          if (!l.classList.contains("ym-am-lrc-active")) {
+            l.classList.add("ym-am-lrc-active");
             l.scrollIntoView({ behavior: "smooth", block: "center" });
           }
         } else {
-          l.classList.remove("ym-fs-lrc-active");
+          l.classList.remove("ym-am-lrc-active");
         }
       });
     }
@@ -1863,7 +2000,7 @@
   // ==========================================
   // v1.3.2: AUTO-UPDATER & COMMUNITY STATS
   // ==========================================
-  const CURRENT_MOD_VERSION = "v1.3.3";
+  const CURRENT_MOD_VERSION = "v1.3.4";
 
   async function checkModUpdates() {
     try {
@@ -2050,7 +2187,7 @@
       // Refresh admin tab if visible
       loadAdminProposals();
 
-      const bodyText = `${desc}\n\n---\n**Контакт автора:** ${contact || "Не указан"}\n**Версия мода:** v1.3.3`;
+      const bodyText = `${desc}\n\n---\n**Контакт автора:** ${contact || "Не указан"}\n**Версия мода:** v1.3.4`;
       const issueUrl = `https://github.com/alexis0eu/Mod-Yandex-Music/issues/new?title=${encodeURIComponent("[Идея] " + title)}&body=${encodeURIComponent(bodyText)}&labels=suggestion`;
 
       try {
@@ -2126,44 +2263,68 @@
     container.id = "ym-halloween-decorations";
     container.style.cssText = "position:fixed!important;inset:0!important;pointer-events:none!important;z-index:900!important;overflow:hidden!important;";
     container.innerHTML = `
-      <!-- Top Right Cobweb with Hanging Spider -->
-      <div id="ym-halloween-cobweb" class="ym-halloween-cobweb" style="position:absolute;top:0;right:0;width:160px;height:160px;pointer-events:none;opacity:0.85;transition:opacity 0.3s ease;">
-        <svg viewBox="0 0 100 100" style="width:100%;height:100%;stroke:rgba(255,255,255,0.7);stroke-width:1.2;fill:none;filter:drop-shadow(0 0 4px rgba(255,255,255,0.3));">
-          <path d="M 100,0 L 0,0 L 100,100 Z" fill="rgba(255,255,255,0.03)" />
-          <line x1="100" y1="0" x2="0" y2="0" />
-          <line x1="100" y1="0" x2="10" y2="25" />
-          <line x1="100" y1="0" x2="25" y2="55" />
-          <line x1="100" y1="0" x2="55" y2="80" />
-          <line x1="100" y1="0" x2="80" y2="95" />
-          <line x1="100" y1="0" x2="100" y2="100" />
-          <path d="M 80,0 Q 82,15 90,20 Q 95,12 100,10" />
-          <path d="M 60,0 Q 64,28 75,40 Q 88,48 100,28" />
-          <path d="M 40,0 Q 48,45 62,60 Q 78,70 100,50" />
-          <path d="M 20,0 Q 30,62 48,78 Q 70,88 100,75" />
-          <path d="M 0,0 Q 15,80 35,92 Q 62,100 100,98" />
-        </svg>
-        <div class="ym-spider-thread" style="position:absolute;top:35px;right:65px;width:1.5px;height:65px;background:rgba(255,255,255,0.55);transform-origin:top center;animation:ymSpiderSwing 4s ease-in-out infinite;">
-          <div class="ym-spider" style="position:absolute;bottom:-10px;left:-9px;font-size:20px;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.9));animation:ymSpiderDangle 3s ease-in-out infinite alternate;">🕷️</div>
+      <!-- Gothic Spiderwebs Container (Visible on My Wave) -->
+      <div id="ym-halloween-cobwebs" class="ym-halloween-cobweb-container">
+        <!-- Top Right Intricate Cobweb with Hanging Animated Spider -->
+        <div class="ym-cobweb-top-right">
+          <svg viewBox="0 0 200 200" style="width:100%;height:100%;stroke:rgba(255,255,255,0.72);stroke-width:1.2;fill:none;filter:drop-shadow(0 0 4px rgba(255,255,255,0.35));">
+            <line x1="200" y1="0" x2="0" y2="0" />
+            <line x1="200" y1="0" x2="20" y2="40" />
+            <line x1="200" y1="0" x2="50" y2="90" />
+            <line x1="200" y1="0" x2="90" y2="140" />
+            <line x1="200" y1="0" x2="140" y2="180" />
+            <line x1="200" y1="0" x2="200" y2="200" />
+            <!-- Curved organic silk strands -->
+            <path d="M 170,0 Q 174,25 186,30 Q 192,18 200,16" />
+            <path d="M 140,0 Q 146,45 165,65 Q 182,75 200,45" />
+            <path d="M 105,0 Q 115,70 138,98 Q 166,115 200,80" />
+            <path d="M 70,0 Q 85,98 112,130 Q 150,152 200,120" />
+            <path d="M 35,0 Q 55,125 85,160 Q 130,188 200,160" />
+            <path d="M 0,0 Q 25,150 60,188 Q 110,215 200,198" />
+          </svg>
+          <div class="ym-spider-thread">
+            <div class="ym-spider">🕷️</div>
+          </div>
+        </div>
+
+        <!-- Top Left Corner Gothic Web -->
+        <div class="ym-cobweb-top-left">
+          <svg viewBox="0 0 160 160" style="width:100%;height:100%;stroke:rgba(255,255,255,0.65);stroke-width:1.1;fill:none;filter:drop-shadow(0 0 3px rgba(255,255,255,0.25));">
+            <line x1="0" y1="0" x2="160" y2="0" />
+            <line x1="0" y1="0" x2="140" y2="30" />
+            <line x1="0" y1="0" x2="110" y2="70" />
+            <line x1="0" y1="0" x2="70" y2="110" />
+            <line x1="0" y1="0" x2="30" y2="140" />
+            <line x1="0" y1="0" x2="0" y2="160" />
+            <path d="M 0,20 Q 20,18 26,0" />
+            <path d="M 0,50 Q 42,42 55,0" />
+            <path d="M 0,85 Q 70,72 90,0" />
+            <path d="M 0,120 Q 100,105 125,0" />
+            <path d="M 0,155 Q 130,135 158,0" />
+          </svg>
         </div>
       </div>
 
-      <!-- Bottom Pumpkins -->
+      <!-- Giant Jack-o'-Lantern Pumpkins spread along the bottom -->
       <div id="ym-halloween-pumpkins">
-        <div class="ym-halloween-pumpkin ym-pumpkin-b1" style="position:absolute;bottom:96px;right:35px;font-size:38px;filter:drop-shadow(0 0 16px rgba(255,117,24,0.85));animation:ymPumpkinFloat 4s ease-in-out infinite;">🎃</div>
-        <div class="ym-halloween-pumpkin ym-pumpkin-b2" style="position:absolute;bottom:96px;left:240px;font-size:32px;filter:drop-shadow(0 0 14px rgba(255,117,24,0.75));animation:ymPumpkinFloat 4.8s ease-in-out infinite 1s;">🎃</div>
-        <div class="ym-halloween-pumpkin ym-pumpkin-b3" style="position:absolute;bottom:92px;right:120px;font-size:26px;filter:drop-shadow(0 0 12px rgba(255,117,24,0.7));animation:ymPumpkinFloat 4.2s ease-in-out infinite 0.5s;">🎃</div>
+        <div class="ym-halloween-pumpkin ym-pumpkin-b1" style="bottom:85px;left:235px;font-size:68px;transform:rotate(-4deg);">🎃</div>
+        <div class="ym-halloween-pumpkin ym-pumpkin-b2" style="bottom:82px;left:42%;font-size:48px;animation-delay:0.8s;">🎃</div>
+        <div class="ym-halloween-pumpkin ym-pumpkin-b3" style="bottom:82px;right:36%;font-size:54px;animation-delay:1.4s;transform:rotate(5deg);">🎃</div>
+        <div class="ym-halloween-pumpkin ym-pumpkin-b4" style="bottom:86px;right:140px;font-size:50px;animation-delay:0.5s;">🎃</div>
+        <div class="ym-halloween-pumpkin ym-pumpkin-b5" style="bottom:90px;right:30px;font-size:74px;animation-delay:1.8s;transform:rotate(-3deg);">🎃</div>
       </div>
     `;
     document.body.appendChild(container);
 
     if (halloweenObserverInterval) clearInterval(halloweenObserverInterval);
     halloweenObserverInterval = setInterval(() => {
-      const cobweb = document.getElementById("ym-halloween-cobweb");
-      if (cobweb) {
+      const cobwebs = document.getElementById("ym-halloween-cobwebs");
+      if (cobwebs) {
         const waveActive = isMyWaveActive();
-        cobweb.style.display = waveActive ? "block" : "none";
+        cobwebs.style.opacity = waveActive ? "1" : "0";
+        cobwebs.style.visibility = waveActive ? "visible" : "hidden";
       }
-    }, 600);
+    }, 500);
   }
 
   function stopHalloweenDecorations() {
@@ -2785,7 +2946,7 @@
 
             <div class="ym-modal-title">Настройки Мода</div>
 
-            <div class="ym-modal-version">v1.3.3 (YM 5.124.1)</div>
+            <div class="ym-modal-version">v1.3.4 (YM 5.124.1)</div>
 
           </div>
 
@@ -4155,7 +4316,7 @@
     const modalLogo = backdrop.querySelector(".ym-modal-logo");
     if (modalLogo) {
       modalLogo.style.cursor = "pointer";
-      modalLogo.title = "Версия v1.3.3";
+      modalLogo.title = "Версия v1.3.4";
       modalLogo.addEventListener("click", () => {
         logoClicks++;
         clearTimeout(logoTimer);
@@ -5010,7 +5171,7 @@
 
           <span class="ym-mod-btn-text">Настройки Мода</span>
 
-          <span class="ym-mod-ver-tag">v1.3.3</span>
+          <span class="ym-mod-ver-tag">v1.3.4</span>
 
         `;
 
@@ -5605,9 +5766,12 @@
             loadLyricsForTrack(state.track.title, state.track.artists, state.track.id, state.track.coverUrl);
           }
 
-          // Active lyrics line synchronization
-          if (fsLyricsVisible && state.progress && state.progress.position !== undefined) {
-            updateFullscreenLyricsActiveLine(state.progress.position);
+          // Active lyrics line synchronization & Apple Music progress update
+          if (fsLyricsVisible && state.progress) {
+            if (state.progress.position !== undefined) {
+              updateFullscreenLyricsActiveLine(state.progress.position);
+            }
+            updateAppleMusicProgress(state.progress.position, state.progress.duration, state.isPlaying);
           }
         }
       } catch (err) {}

@@ -1133,7 +1133,7 @@ button[aria-label*="Текст"] {
 }
 
 /* ==========================================
-   v1.3.3: HALLOWEEN PUMPKIN & LYRICS CONTROLS
+   v1.3.4: HALLOWEEN PUMPKIN & LYRICS CONTROLS
    ========================================== */
 @keyframes ymPumpkinFloat {
   0%, 100% {
@@ -1174,7 +1174,7 @@ button[aria-label*="Текст"] {
 }
 
 /* ==========================================
-   v1.3.3: TYPOGRAPHY SLIDER & MODAL ISOLATION
+   v1.3.4: TYPOGRAPHY SLIDER & MODAL ISOLATION
    ========================================== */
 #ym-mod-settings-modal,
 #ym-proposal-modal,
@@ -1210,7 +1210,7 @@ button[aria-label*="Текст"] {
 }
 
 /* ==========================================
-   v1.3.3: HALLOWEEN PUMPKIN ANIMATION
+   v1.3.4: HALLOWEEN PUMPKIN ANIMATION
    ========================================== */
 @keyframes ymPumpkinFloat {
   0%, 100% {
@@ -1247,7 +1247,7 @@ button[aria-label*="Текст"] {
 }
 
 /* ==========================================
-   v1.3.3: FULLSCREEN / IN-APP LYRICS STYLING
+   v1.3.4: FULLSCREEN / IN-APP LYRICS STYLING
    ========================================== */
 #ym-mod-fullscreen-lyrics {
   position: fixed !important;
@@ -1397,7 +1397,7 @@ button[aria-label*="Текст"] {
 
 
 /* ==========================================
-   v1.3.3: PROPOSAL MODAL INTERACTIVITY FIX
+   v1.3.4: PROPOSAL MODAL INTERACTIVITY FIX
    ========================================== */
 #ym-proposal-modal {
   pointer-events: auto !important;
@@ -1426,18 +1426,102 @@ button[aria-label*="Текст"] {
 }
 
 /* ==========================================
-   v1.3.3: HALLOWEEN SPIDERWEB & SPIDER ANIMATIONS
+   v1.3.4: ENHANCED HALLOWEEN DECORATIONS (GOTHIC WEBS & GIANT PUMPKINS)
    ========================================== */
-.ym-halloween-cobweb {
+#ym-halloween-decorations {
+  position: fixed !important;
+  inset: 0 !important;
+  pointer-events: none !important;
+  z-index: 99 !important;
+  overflow: hidden !important;
+}
+
+.ym-halloween-cobweb-container {
+  position: absolute !important;
+  inset: 0 !important;
+  pointer-events: none !important;
+  transition: opacity 0.4s ease, visibility 0.4s ease !important;
+}
+
+.ym-cobweb-top-right {
   position: absolute !important;
   top: 0 !important;
   right: 0 !important;
-  width: 160px !important;
-  height: 160px !important;
+  width: 230px !important;
+  height: 230px !important;
   pointer-events: none !important;
-  z-index: 99 !important;
-  opacity: 0.85 !important;
-  transition: opacity 0.35s ease, transform 0.35s ease !important;
+  opacity: 0.88 !important;
+}
+
+.ym-cobweb-top-left {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 190px !important;
+  height: 190px !important;
+  pointer-events: none !important;
+  opacity: 0.8 !important;
+}
+
+.ym-spider-thread {
+  position: absolute !important;
+  top: 45px !important;
+  right: 95px !important;
+  width: 1.5px !important;
+  height: 90px !important;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.7), rgba(255,255,255,0.3)) !important;
+  transform-origin: top center !important;
+  animation: ymSpiderSwing 4.5s ease-in-out infinite !important;
+}
+
+.ym-spider {
+  position: absolute !important;
+  bottom: -12px !important;
+  left: -12px !important;
+  font-size: 24px !important;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.95)) !important;
+  animation: ymSpiderDangle 3.2s ease-in-out infinite alternate !important;
+}
+
+@keyframes ymSpiderSwing {
+  0%, 100% { transform: rotate(-6deg); }
+  50% { transform: rotate(6deg); }
+}
+
+@keyframes ymSpiderDangle {
+  0% { transform: translateY(0) scale(1); }
+  100% { transform: translateY(12px) scale(1.05); }
+}
+
+/* Giant Jack-o'-Lantern Pumpkins across the bottom */
+.ym-halloween-pumpkin {
+  position: absolute !important;
+  pointer-events: none !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  line-height: 1 !important;
+  transition: transform 0.3s ease !important;
+  animation: ymPumpkinHover 4.5s ease-in-out infinite, ymPumpkinCandleGlow 2.8s ease-in-out infinite !important;
+}
+
+@keyframes ymPumpkinHover {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(3deg);
+  }
+}
+
+@keyframes ymPumpkinCandleGlow {
+  0%, 100% {
+    filter: drop-shadow(0 0 16px rgba(255, 115, 0, 0.92)) drop-shadow(0 0 32px rgba(255, 60, 0, 0.55));
+    opacity: 0.94;
+  }
+  50% {
+    filter: drop-shadow(0 0 24px rgba(255, 145, 0, 1)) drop-shadow(0 0 45px rgba(255, 80, 0, 0.75));
+    opacity: 1;
+  }
 }
 
 .ym-spider-thread {
@@ -1468,4 +1552,342 @@ button[aria-label*="Текст"] {
 @keyframes ymSpiderDangle {
   0% { transform: translateY(0); }
   100% { transform: translateY(8px); }
+}
+
+/* ==========================================
+   v1.3.4: APPLE MUSIC GLASSMORPHIC MINI-PLAYER & SYNCED LYRICS
+   ========================================== */
+#ym-mod-fullscreen-lyrics {
+  position: fixed !important;
+  width: 400px !important;
+  max-width: calc(100vw - 32px) !important;
+  background: rgba(24, 25, 30, 0.88) !important;
+  backdrop-filter: blur(50px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(50px) saturate(200%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.85), 0 0 1px rgba(255, 255, 255, 0.3) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  z-index: 10000 !important;
+  overflow: hidden !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif !important;
+  transition: height 0.32s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+#ym-mod-fullscreen-lyrics.ym-fs-lyrics-docked {
+  top: 70px !important;
+  right: 24px !important;
+  bottom: 95px !important;
+  left: auto !important;
+  height: auto !important;
+  transform: none !important;
+}
+
+#ym-mod-fullscreen-lyrics.ym-am-compact {
+  bottom: auto !important;
+  height: 175px !important;
+}
+
+/* Ambient Artwork Glow Layer */
+.ym-am-art-backdrop {
+  position: absolute !important;
+  inset: -30px !important;
+  background-size: cover !important;
+  background-position: center !important;
+  filter: blur(55px) brightness(0.4) saturate(180%) !important;
+  opacity: 0.65 !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+  transition: background-image 0.5s ease, opacity 0.5s ease !important;
+}
+
+/* Apple Music Header */
+.ym-am-header {
+  position: relative !important;
+  z-index: 2 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 14px 18px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  cursor: grab !important;
+  user-select: none !important;
+}
+
+.ym-am-header:active {
+  cursor: grabbing !important;
+}
+
+.ym-am-track-info {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  min-width: 0 !important;
+  flex: 1 !important;
+}
+
+.ym-am-cover {
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 8px !important;
+  object-fit: cover !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5) !important;
+  flex-shrink: 0 !important;
+}
+
+.ym-am-meta {
+  display: flex !important;
+  flex-direction: column !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+.ym-am-title {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  color: #ffffff !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  letter-spacing: -0.2px !important;
+}
+
+.ym-am-artist {
+  font-size: 13px !important;
+  color: rgba(255, 255, 255, 0.65) !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  margin-top: 1px !important;
+}
+
+.ym-am-badge-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  margin-top: 2px !important;
+}
+
+.ym-am-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  color: rgba(255, 255, 255, 0.55) !important;
+  letter-spacing: 0.2px !important;
+}
+
+.ym-am-window-controls {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-shrink: 0 !important;
+}
+
+.ym-am-btn-tool {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  border-radius: 50% !important;
+  width: 26px !important;
+  height: 26px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  font-size: 12px !important;
+  padding: 0 !important;
+}
+
+.ym-am-btn-tool:hover {
+  background: rgba(255, 255, 255, 0.18) !important;
+  color: #fff !important;
+  transform: scale(1.08) !important;
+}
+
+.ym-am-btn-close:hover {
+  background: #ff2d3c !important;
+  border-color: #ff2d3c !important;
+  color: #fff !important;
+}
+
+/* Apple Music Scrolling Lyrics Body */
+.ym-am-lyrics-body {
+  position: relative !important;
+  z-index: 2 !important;
+  flex: 1 !important;
+  overflow-y: auto !important;
+  padding: 26px 20px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 14px !important;
+  scroll-behavior: smooth !important;
+  mask-image: linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%) !important;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%) !important;
+}
+
+.ym-am-compact .ym-am-lyrics-body {
+  display: none !important;
+}
+
+/* Apple Music Lyrics Lines */
+.ym-am-lrc-line {
+  font-size: 23px !important;
+  font-weight: 700 !important;
+  color: rgba(255, 255, 255, 0.28) !important;
+  line-height: 1.35 !important;
+  cursor: pointer !important;
+  transition: all 0.35s cubic-bezier(0.2, 0.9, 0.3, 1) !important;
+  padding: 8px 14px !important;
+  border-radius: 12px !important;
+  transform-origin: left center !important;
+  filter: blur(0.2px) !important;
+  letter-spacing: -0.3px !important;
+}
+
+.ym-am-lrc-line:hover {
+  color: rgba(255, 255, 255, 0.65) !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+  filter: none !important;
+}
+
+.ym-am-lrc-line.ym-am-lrc-active {
+  color: #ffffff !important;
+  font-size: 26px !important;
+  font-weight: 800 !important;
+  opacity: 1 !important;
+  transform: scale(1.04) !important;
+  filter: none !important;
+  text-shadow: 0 0 24px rgba(255, 255, 255, 0.45), 0 2px 10px rgba(0, 0, 0, 0.7) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Empty Lyrics View (Image 3) */
+.ym-am-empty-lyrics {
+  margin: auto !important;
+  text-align: center !important;
+  color: rgba(255, 255, 255, 0.45) !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  padding: 40px 20px !important;
+  line-height: 1.5 !important;
+}
+
+/* Bottom Player Controls Bar */
+.ym-am-controls-bar {
+  position: relative !important;
+  z-index: 2 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  padding: 12px 18px 16px 18px !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: rgba(20, 21, 26, 0.6) !important;
+}
+
+/* Progress Section */
+.ym-am-progress-section {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: 100% !important;
+}
+
+.ym-am-time {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: rgba(255, 255, 255, 0.5) !important;
+  min-width: 32px !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+.ym-am-time.ym-am-time-right {
+  text-align: right !important;
+}
+
+.ym-am-trackbar {
+  position: relative !important;
+  flex: 1 !important;
+  height: 4px !important;
+  background: rgba(255, 255, 255, 0.16) !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+  transition: height 0.15s ease !important;
+}
+
+.ym-am-trackbar:hover {
+  height: 6px !important;
+}
+
+.ym-am-trackbar-fill {
+  position: absolute !important;
+  left: 0 !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  width: 0% !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-radius: 4px !important;
+  pointer-events: none !important;
+}
+
+.ym-am-trackbar-thumb {
+  position: absolute !important;
+  top: 50% !important;
+  left: 0% !important;
+  width: 10px !important;
+  height: 10px !important;
+  border-radius: 50% !important;
+  background: #ffffff !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4) !important;
+  transform: translate(-50%, -50%) scale(0) !important;
+  transition: transform 0.15s ease !important;
+  pointer-events: none !important;
+}
+
+.ym-am-trackbar:hover .ym-am-trackbar-thumb {
+  transform: translate(-50%, -50%) scale(1) !important;
+}
+
+/* Buttons Row */
+.ym-am-buttons-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 0 4px !important;
+}
+
+.ym-am-btn {
+  background: transparent !important;
+  border: none !important;
+  color: rgba(255, 255, 255, 0.75) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  padding: 6px !important;
+  border-radius: 8px !important;
+  transition: all 0.2s ease !important;
+}
+
+.ym-am-btn:hover {
+  color: #ffffff !important;
+  transform: scale(1.1) !important;
+}
+
+.ym-am-btn.ym-am-btn-play {
+  color: #ffffff !important;
+}
+
+.ym-am-btn.ym-am-btn-play:hover {
+  transform: scale(1.15) !important;
+}
+
+.ym-am-btn.ym-am-btn-lyrics.active {
+  color: #ffffff !important;
+  background: rgba(147, 51, 234, 0.35) !important;
+  box-shadow: 0 0 14px rgba(147, 51, 234, 0.5) !important;
 }
