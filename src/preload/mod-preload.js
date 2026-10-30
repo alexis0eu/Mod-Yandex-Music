@@ -3,6 +3,29 @@
   try {
     const electron = require("electron");
 
+    // 1. Intercept & neutralize official Yandex Music app update listeners and install commands
+    try {
+      const originalOn = electron.ipcRenderer.on.bind(electron.ipcRenderer);
+      electron.ipcRenderer.on = function (channel, listener) {
+        if (channel === "desktop:application:update-available") {
+          // Drop update-available listener so UI never receives update notice
+          return this;
+        }
+        return originalOn(channel, listener);
+      };
+
+      const originalSend = electron.ipcRenderer.send.bind(electron.ipcRenderer);
+      electron.ipcRenderer.send = function (channel, ...args) {
+        if (channel === "desktop:application:install-update") {
+          console.warn("[Mod Preload] Prevented install-update IPC invocation to protect mod");
+          return;
+        }
+        return originalSend(channel, ...args);
+      };
+    } catch (hookErr) {
+      console.error("[Mod Preload Hook Error]", hookErr);
+    }
+
     electron.contextBridge.exposeInMainWorld("yandexMusicMod", {
       getStorageValue: (key) => electron.ipcRenderer.invoke("yandexMusicMod.getStorageValue", key),
       setStorageValue: (key, value) => electron.ipcRenderer.send("yandexMusicMod.setStorageValue", key, value),

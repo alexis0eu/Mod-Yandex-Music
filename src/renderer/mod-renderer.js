@@ -250,6 +250,40 @@
 
 
 
+  // ==========================================
+  // v1.3.5: BLOCK OFFICIAL YANDEX MUSIC APP UPDATES
+  // ==========================================
+  function removeOfficialUpdateBanners() {
+    if (modSettings && modSettings["system/blockAppUpdates"] === false) return;
+    const bannerSelectors = [
+      'div[class*="NotificationUpdate"]',
+      'button[data-test-id*="APP_UPDATE"]',
+      '[data-test-id="APP_UPDATE_NOTIFICATION_BUTTON"]'
+    ];
+    for (const sel of bannerSelectors) {
+      const els = document.querySelectorAll(sel);
+      for (const el of els) {
+        try {
+          const root = el.closest('div[class*="NotificationUpdate_root"]') || el.closest('[class*="Notification_root"]') || el;
+          root.remove();
+        } catch (e) {}
+      }
+    }
+  }
+
+  // Intercept window.musicDesktop if exposed
+  try {
+    if (window.musicDesktop && window.musicDesktop.app) {
+      window.musicDesktop.app.onUpdateAvailable = () => {};
+      window.musicDesktop.app.installUpdate = () => {
+        showToast("🛡️ Обновление заблокировано: мод защищён от слетания");
+      };
+    }
+  } catch (e) {}
+
+  removeOfficialUpdateBanners();
+  setInterval(removeOfficialUpdateBanners, 1500);
+
   async function loadSettings() {
 
     if (window.yandexMusicMod && window.yandexMusicMod.getAllSettings) {
@@ -1604,10 +1638,10 @@
   }
 
   // ==========================================
-  // v1.3.4: APPLE MUSIC GLASSMORPHIC MINI-PLAYER & SYNCED LYRICS
+  // v1.3.5: APPLE MUSIC GLASSMORPHIC MINI-PLAYER & SYNCED LYRICS (PIXEL-PERFECT)
   // ==========================================
   let fsLyricsVisible = false;
-  let isLyricsExpanded = true;
+  let miniPlayerMode = "lyrics"; // "lyrics" | "compact" | "artwork"
   let currentParsedLyrics = [];
   let currentTrackTitle = "";
   let currentTrackArtist = "";
@@ -1616,6 +1650,8 @@
   let currentTrackLyricsId = null;
   let isFetchingLyrics = false;
   let lastActiveLyricIdx = -1;
+  let isUserScrolling = false;
+  let userScrollTimeout = null;
 
   function parseLrcToLines(lrc) {
     if (!lrc) return [];
@@ -1627,12 +1663,17 @@
     const timeRegex = /\[(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]/g;
     let hasAnyTime = false;
 
-    for (const line of rawLines) {
-      const trimmed = line.trim();
+    for (const rawLine of rawLines) {
+      const trimmed = rawLine.trim();
       if (!trimmed) continue;
+      // Skip LRC metadata tags like [ar:The Weeknd], [ti:Sacrifice], etc.
+      if (/^\[(ar|ti|al|by|offset|length|re|ve|hash):/i.test(trimmed)) {
+        continue;
+      }
+
       timeRegex.lastIndex = 0;
       let match;
-      let text = trimmed.replace(timeRegex, "").trim();
+      const text = trimmed.replace(timeRegex, "").trim();
       timeRegex.lastIndex = 0;
       let foundTime = false;
       while ((match = timeRegex.exec(trimmed)) !== null) {
@@ -1644,12 +1685,15 @@
         const time = min * 60 + sec + ms / 1000;
         lines.push({ time, text: text || "♪" });
       }
-      if (!foundTime) {
-        lines.push({ time: -1, text: trimmed });
+      if (!foundTime && text) {
+        lines.push({ time: -1, text: text });
       }
     }
+
     if (hasAnyTime) {
-      lines.sort((a, b) => a.time - b.time);
+      // Keep only timed lines or clean text, sorted by timestamp
+      const timed = lines.filter((l) => l.time >= 0).sort((a, b) => a.time - b.time);
+      return timed.length > 0 ? timed : lines;
     }
     return lines;
   }
@@ -1674,7 +1718,7 @@
     updateLyricsHeaderUI();
 
     const bodyEl = document.getElementById("ym-am-lyrics-body");
-    if (bodyEl && fsLyricsVisible) {
+    if (bodyEl && fsLyricsVisible && miniPlayerMode === "lyrics") {
       bodyEl.innerHTML = `
         <div style="text-align:center;color:rgba(255,255,255,0.65);margin:auto;font-size:14px;display:flex;flex-direction:column;align-items:center;gap:12px;padding:30px 10px;">
           <div class="ym-spinner" style="width:28px;height:28px;border:3px solid rgba(255,255,255,0.25);border-top-color:#ffffff;border-radius:50%;animation:ymSpin 0.8s linear infinite;"></div>
@@ -1736,9 +1780,39 @@
     const bodyEl = document.getElementById("ym-am-lyrics-body");
     if (!bodyEl) return;
 
+    if (miniPlayerMode === "artwork") {
+      // Apple Music Large Artwork View (Image 4)
+      bodyEl.innerHTML = `
+        <div class="ym-am-artwork-view">
+          <div class="ym-am-pip-btn" id="ym-am-pip-btn" title="Свернуть в мини-плеер">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+              <path d="M19 11h-8v6h8v-6zm4 8V4.98C23 3.88 22.1 3 21 3H3c-1.1 0-2 .88-2 1.98V19c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2zm-2 .02H3V4.97h18v14.05z"/>
+            </svg>
+          </div>
+          <div class="ym-am-art-card">
+            <img src="${currentTrackCover || 'https://music.yandex.ru/favicon.ico'}" alt="Artwork" class="ym-am-large-art">
+          </div>
+          <div class="ym-am-art-meta">
+            <div class="ym-am-art-title">${escapeHtml(currentTrackTitle || "Трек не выбран")}</div>
+            <div class="ym-am-art-artist">${escapeHtml(currentTrackArtist || "Яндекс Музыка")}${currentTrackAlbum ? " — " + escapeHtml(currentTrackAlbum) : ""}</div>
+            <div class="ym-am-badge-row" style="justify-content:center;margin-top:6px;">
+              <div class="ym-am-badge">
+                <svg width="14" height="10" viewBox="0 0 14 10" fill="none" stroke="currentColor" stroke-width="1.3">
+                  <path d="M1 5c1-3 2-3 3 0s2 3 3 0 2-3 3 0 2 3 3 0"/>
+                </svg>
+                <span>Lossless</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      document.getElementById("ym-am-pip-btn")?.addEventListener("click", () => setMiniPlayerMode("compact"));
+      return;
+    }
+
     if (currentParsedLyrics && currentParsedLyrics.length > 0) {
       bodyEl.innerHTML = currentParsedLyrics
-        .map((l, idx) => `<div class="ym-am-lrc-line" data-idx="${idx}" data-time="${l.time}">${escapeHtml(l.text || "♪")}</div>`)
+        .map((l, idx) => `<div class="ym-am-lrc-line ym-am-lrc-future" data-idx="${idx}" data-time="${l.time}">${escapeHtml(l.text || "♪")}</div>`)
         .join("");
 
       bodyEl.querySelectorAll(".ym-am-lrc-line").forEach((el) => {
@@ -1746,6 +1820,7 @@
           const t = parseFloat(el.getAttribute("data-time"));
           if (!isNaN(t) && t >= 0) {
             seekAudioTo(t);
+            updateFullscreenLyricsActiveLine(t);
           }
         });
       });
@@ -1791,6 +1866,84 @@
     }
   }
 
+  function setMiniPlayerMode(mode) {
+    miniPlayerMode = mode;
+    const container = document.getElementById("ym-mod-fullscreen-lyrics");
+    if (!container) return;
+
+    container.classList.remove("ym-am-compact", "ym-am-mode-artwork");
+    const lyricsBtn = document.getElementById("ym-am-btn-lyrics");
+
+    if (mode === "compact") {
+      container.classList.add("ym-am-compact");
+      lyricsBtn?.classList.remove("active");
+    } else if (mode === "artwork") {
+      container.classList.add("ym-am-mode-artwork");
+      lyricsBtn?.classList.remove("active");
+      renderLyricsBodyUI();
+    } else {
+      // lyrics mode
+      lyricsBtn?.classList.add("active");
+      renderLyricsBodyUI();
+      if (lastActiveLyricIdx !== -1) {
+        setTimeout(() => {
+          const body = document.getElementById("ym-am-lyrics-body");
+          const activeEl = body?.querySelector(`[data-idx="${lastActiveLyricIdx}"]`);
+          activeEl?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 120);
+      }
+    }
+  }
+
+  function makeMiniPlayerDraggable(headerEl, containerEl) {
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+    let startLeft = 0;
+    let startTop = 0;
+
+    headerEl.addEventListener("mousedown", (e) => {
+      if (e.target.closest("button") || e.target.closest(".ym-am-badge") || e.target.closest("a")) return;
+      isDragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      const rect = containerEl.getBoundingClientRect();
+      startLeft = rect.left;
+      startTop = rect.top;
+
+      containerEl.classList.remove("ym-fs-lyrics-docked");
+      containerEl.style.left = `${startLeft}px`;
+      containerEl.style.top = `${startTop}px`;
+      containerEl.style.right = "auto";
+      containerEl.style.bottom = "auto";
+
+      const onMouseMove = (ev) => {
+        if (!isDragging) return;
+        const dx = ev.clientX - startX;
+        const dy = ev.clientY - startY;
+        const newLeft = Math.max(10, Math.min(window.innerWidth - containerEl.offsetWidth - 10, startLeft + dx));
+        const newTop = Math.max(10, Math.min(window.innerHeight - 90, startTop + dy));
+        containerEl.style.left = `${newLeft}px`;
+        containerEl.style.top = `${newTop}px`;
+      };
+
+      const onMouseUp = () => {
+        isDragging = false;
+        document.removeEventListener("mousemove", onMouseMove);
+        document.removeEventListener("mouseup", onMouseUp);
+        try {
+          localStorage.setItem("ym_mod_miniplayer_pos", JSON.stringify({
+            left: containerEl.style.left,
+            top: containerEl.style.top,
+          }));
+        } catch (e) {}
+      };
+
+      document.addEventListener("mousemove", onMouseMove);
+      document.addEventListener("mouseup", onMouseUp);
+    });
+  }
+
   function toggleFullscreenLyrics(force) {
     fsLyricsVisible = typeof force === "boolean" ? force : !fsLyricsVisible;
     let container = document.getElementById("ym-mod-fullscreen-lyrics");
@@ -1805,12 +1958,18 @@
       container.id = "ym-mod-fullscreen-lyrics";
       container.className = "ym-fs-lyrics-docked";
       document.body.appendChild(container);
-    }
 
-    if (!isLyricsExpanded) {
-      container.classList.add("ym-am-compact");
-    } else {
-      container.classList.remove("ym-am-compact");
+      // Restore saved drag position if available
+      try {
+        const savedPos = JSON.parse(localStorage.getItem("ym_mod_miniplayer_pos") || "null");
+        if (savedPos && savedPos.left && savedPos.top) {
+          container.classList.remove("ym-fs-lyrics-docked");
+          container.style.left = savedPos.left;
+          container.style.top = savedPos.top;
+          container.style.right = "auto";
+          container.style.bottom = "auto";
+        }
+      } catch (e) {}
     }
 
     // Refresh track metadata from live player state
@@ -1832,7 +1991,7 @@
       <!-- Apple Music Header -->
       <div class="ym-am-header" id="ym-am-header">
         <div class="ym-am-track-info">
-          <img id="ym-am-cover" class="ym-am-cover" src="${currentTrackCover || 'https://music.yandex.ru/favicon.ico'}" alt="Cover">
+          <img id="ym-am-cover" class="ym-am-cover" src="${currentTrackCover || 'https://music.yandex.ru/favicon.ico'}" alt="Cover" title="Нажмите для просмотра обложки">
           <div class="ym-am-meta">
             <div id="ym-am-title" class="ym-am-title">${escapeHtml(currentTrackTitle || "Трек не выбран")}</div>
             <div id="ym-am-artist" class="ym-am-artist">${escapeHtml(currentTrackArtist || "Яндекс Музыка")}${currentTrackAlbum ? " — " + escapeHtml(currentTrackAlbum) : ""}</div>
@@ -1847,7 +2006,8 @@
           </div>
         </div>
         <div class="ym-am-window-controls">
-          <button class="ym-am-btn-tool" id="ym-am-btn-compact" title="Свернуть/Развернуть текст">⤢</button>
+          <button class="ym-am-btn-tool" id="ym-am-btn-min" title="Свернуть в мини-плеер">—</button>
+          <button class="ym-am-btn-tool" id="ym-am-btn-expand" title="Развернуть / Свернуть">⤢</button>
           <button class="ym-am-btn-tool ym-am-btn-close" id="ym-am-btn-close" title="Закрыть">✕</button>
         </div>
       </div>
@@ -1882,8 +2042,10 @@
           <button class="ym-am-btn" id="ym-am-btn-next" title="Следующий трек">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
           </button>
-          <button class="ym-am-btn ym-am-btn-lyrics ${isLyricsExpanded ? 'active' : ''}" id="ym-am-btn-lyrics" title="Текст песни (Apple Music)">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-6.5 9c-.83 0-1.5-.67-1.5-1.5S12.67 8 13.5 8s1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm-5 0C7.67 11 7 10.33 7 9.5S7.67 8 8.5 8s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
+          <button class="ym-am-btn ym-am-btn-lyrics active" id="ym-am-btn-lyrics" title="Текст песни (Apple Music)">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+              <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-6.5 9c-.83 0-1.5-.67-1.5-1.5S12.67 8 13.5 8s1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm-5 0C7.67 11 7 10.33 7 9.5S7.67 8 8.5 8s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+            </svg>
           </button>
           <button class="ym-am-btn" id="ym-am-btn-queue" title="Очередь">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
@@ -1892,26 +2054,45 @@
       </div>
     `;
 
+    const header = document.getElementById("ym-am-header");
+    if (header) {
+      makeMiniPlayerDraggable(header, container);
+    }
+
+    // User scrolling detection to avoid jittery auto-centering
+    const lyricsBodyEl = document.getElementById("ym-am-lyrics-body");
+    if (lyricsBodyEl) {
+      const handleUserScroll = () => {
+        isUserScrolling = true;
+        if (userScrollTimeout) clearTimeout(userScrollTimeout);
+        userScrollTimeout = setTimeout(() => {
+          isUserScrolling = false;
+          if (lastActiveLyricIdx !== -1) {
+            const activeEl = lyricsBodyEl.querySelector(`[data-idx="${lastActiveLyricIdx}"]`);
+            activeEl?.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+        }, 4000);
+      };
+      lyricsBodyEl.addEventListener("wheel", handleUserScroll, { passive: true });
+      lyricsBodyEl.addEventListener("touchmove", handleUserScroll, { passive: true });
+    }
+
+    // Window controls
     document.getElementById("ym-am-btn-close")?.addEventListener("click", () => toggleFullscreenLyrics(false));
+    document.getElementById("ym-am-btn-min")?.addEventListener("click", () => setMiniPlayerMode("compact"));
+    document.getElementById("ym-am-btn-expand")?.addEventListener("click", () => {
+      setMiniPlayerMode(miniPlayerMode === "compact" ? "lyrics" : "compact");
+    });
 
-    const toggleCompactBtn = document.getElementById("ym-am-btn-compact");
-    const lyricsBtn = document.getElementById("ym-am-btn-lyrics");
+    // Clicking small cover opens large artwork mode
+    document.getElementById("ym-am-cover")?.addEventListener("click", () => {
+      setMiniPlayerMode(miniPlayerMode === "artwork" ? "lyrics" : "artwork");
+    });
 
-    const toggleCompactMode = () => {
-      isLyricsExpanded = !isLyricsExpanded;
-      container.classList.toggle("ym-am-compact", !isLyricsExpanded);
-      lyricsBtn?.classList.toggle("active", isLyricsExpanded);
-      if (isLyricsExpanded && lastActiveLyricIdx !== -1) {
-        setTimeout(() => {
-          const body = document.getElementById("ym-am-lyrics-body");
-          const activeEl = body?.querySelector(`[data-idx="${lastActiveLyricIdx}"]`);
-          activeEl?.scrollIntoView({ behavior: "smooth", block: "center" });
-        }, 100);
-      }
-    };
-
-    toggleCompactBtn?.addEventListener("click", toggleCompactMode);
-    lyricsBtn?.addEventListener("click", toggleCompactMode);
+    // Lyrics button toggles lyrics / compact
+    document.getElementById("ym-am-btn-lyrics")?.addEventListener("click", () => {
+      setMiniPlayerMode(miniPlayerMode === "lyrics" ? "compact" : "lyrics");
+    });
 
     // Interactive Trackbar Scrubber
     const trackbar = document.getElementById("ym-am-trackbar");
@@ -1926,10 +2107,20 @@
       }
     });
 
-    // Control buttons wiring
+    // Player controls
     document.getElementById("ym-am-btn-play")?.addEventListener("click", () => handlePlayerAction("playPause"));
     document.getElementById("ym-am-btn-prev")?.addEventListener("click", () => handlePlayerAction("prev"));
     document.getElementById("ym-am-btn-next")?.addEventListener("click", () => handlePlayerAction("next"));
+    document.getElementById("ym-am-btn-vol")?.addEventListener("click", () => {
+      const volBtn = document.querySelector('button[data-test-id*="VOLUME"], [data-test-id="VOLUME_BUTTON"]');
+      if (volBtn) volBtn.click();
+    });
+    document.getElementById("ym-am-btn-queue")?.addEventListener("click", () => {
+      const qBtn = document.querySelector('button[data-test-id="PLAYERBAR_DESKTOP_PLAY_QUEUE_BUTTON"], button[data-test-id="QUEUE_BUTTON"]');
+      if (qBtn) qBtn.click();
+    });
+
+    setMiniPlayerMode(miniPlayerMode);
 
     const curId = curState?.track?.id || `${currentTrackTitle}-${currentTrackArtist}`;
     if (currentParsedLyrics.length > 0 && currentTrackLyricsId === curId) {
@@ -1943,6 +2134,9 @@
     if (curState && curState.progress) {
       updateAppleMusicProgress(curState.progress.position, curState.progress.duration, curState.isPlaying);
     }
+
+    // Attach direct audio listener for 60fps lyrics sync
+    hookDirectAudioElement();
   }
 
   function seekAudioTo(targetSeconds) {
@@ -1954,20 +2148,34 @@
     } catch (e) {}
   }
 
+  function hookDirectAudioElement() {
+    try {
+      const audio = document.querySelector("audio");
+      if (audio && !audio.__ymAmLyricsHooked) {
+        audio.__ymAmLyricsHooked = true;
+        audio.addEventListener("timeupdate", () => {
+          if (fsLyricsVisible) {
+            updateFullscreenLyricsActiveLine(audio.currentTime);
+            updateAppleMusicProgress(audio.currentTime, audio.duration || 0, !audio.paused);
+          }
+        });
+      }
+    } catch (e) {}
+  }
+
   function updateFullscreenLyricsActiveLine(currentTime) {
-    if (!fsLyricsVisible) return;
+    if (!fsLyricsVisible || miniPlayerMode !== "lyrics") return;
     const body = document.getElementById("ym-am-lyrics-body");
     if (!body || !currentParsedLyrics.length) return;
 
+    // Bulletproof binary-free linear pass for exact current line
     let activeIdx = -1;
     for (let i = 0; i < currentParsedLyrics.length; i++) {
       const line = currentParsedLyrics[i];
-      const nextLine = currentParsedLyrics[i + 1];
-      if (line.time >= 0 && currentTime >= line.time) {
-        if (!nextLine || currentTime < nextLine.time) {
-          activeIdx = i;
-          break;
-        }
+      if (line.time >= 0 && line.time <= (currentTime + 0.18)) {
+        activeIdx = i;
+      } else if (line.time > (currentTime + 0.18)) {
+        break;
       }
     }
 
@@ -1976,18 +2184,20 @@
       const lines = body.querySelectorAll(".ym-am-lrc-line");
       lines.forEach((l, idx) => {
         if (idx === activeIdx) {
-          if (!l.classList.contains("ym-am-lrc-active")) {
-            l.classList.add("ym-am-lrc-active");
+          l.className = "ym-am-lrc-line ym-am-lrc-active";
+          if (!isUserScrolling) {
             l.scrollIntoView({ behavior: "smooth", block: "center" });
           }
+        } else if (idx < activeIdx) {
+          l.className = "ym-am-lrc-line ym-am-lrc-past";
         } else {
-          l.classList.remove("ym-am-lrc-active");
+          l.className = "ym-am-lrc-line ym-am-lrc-future";
         }
       });
     }
   }
 
-  // Intercept all lyrics buttons to toggle in-app lyrics
+  // Intercept all lyrics buttons to toggle in-app Apple Music lyrics
   document.addEventListener("click", (e) => {
     const btn = e.target.closest('button[data-test-id*="SYNC_LYRICS_BUTTON"], button[data-test-id*="LYRICS"], button[aria-label*="текст"], button[aria-label*="Текст"]');
     if (btn) {
@@ -1997,10 +2207,40 @@
     }
   }, true);
 
+  // Global hotkey: Ctrl+Shift+M or Ctrl+L to toggle Apple Music Mini-Player
+  document.addEventListener("keydown", (e) => {
+    if ((e.ctrlKey && e.shiftKey && (e.key === "M" || e.key === "m")) || (e.ctrlKey && (e.key === "L" || e.key === "l") && !e.shiftKey && !e.altKey)) {
+      if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) return;
+      e.preventDefault();
+      toggleFullscreenLyrics();
+    }
+  });
+
+  // Inject Dedicated Mini-Player Button into Yandex Music Playerbar
+  function injectPlayerMiniPlayerButton() {
+    if (document.getElementById("ym-btn-player-miniplayer")) return;
+    const player = document.querySelector('section[data-test-id="PLAYERBAR_DESKTOP"]');
+    if (!player) return;
+    const likeBtn = player.querySelector('button[data-test-id="LIKE_BUTTON"]');
+    if (!likeBtn || !likeBtn.parentNode) return;
+
+    const btn = document.createElement("button");
+    btn.id = "ym-btn-player-miniplayer";
+    btn.className = "ym-player-download-btn ym-player-miniplayer-btn";
+    btn.title = "Мини-плеер Apple Music с текстом песни (Ctrl+Shift+M)";
+    btn.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-6.5 9c-.83 0-1.5-.67-1.5-1.5S12.67 8 13.5 8s1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm-5 0C7.67 11 7 10.33 7 9.5S7.67 8 8.5 8s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>`;
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleFullscreenLyrics();
+    });
+
+    likeBtn.parentNode.insertBefore(btn, likeBtn.nextSibling);
+  }
+
   // ==========================================
   // v1.3.2: AUTO-UPDATER & COMMUNITY STATS
   // ==========================================
-  const CURRENT_MOD_VERSION = "v1.3.4";
+  const CURRENT_MOD_VERSION = "v1.3.5";
 
   async function checkModUpdates() {
     try {
@@ -2187,7 +2427,7 @@
       // Refresh admin tab if visible
       loadAdminProposals();
 
-      const bodyText = `${desc}\n\n---\n**Контакт автора:** ${contact || "Не указан"}\n**Версия мода:** v1.3.4`;
+      const bodyText = `${desc}\n\n---\n**Контакт автора:** ${contact || "Не указан"}\n**Версия мода:** v1.3.5`;
       const issueUrl = `https://github.com/alexis0eu/Mod-Yandex-Music/issues/new?title=${encodeURIComponent("[Идея] " + title)}&body=${encodeURIComponent(bodyText)}&labels=suggestion`;
 
       try {
@@ -2946,7 +3186,7 @@
 
             <div class="ym-modal-title">Настройки Мода</div>
 
-            <div class="ym-modal-version">v1.3.4 (YM 5.124.1)</div>
+            <div class="ym-modal-version">v1.3.5 (YM 5.124.1)</div>
 
           </div>
 
@@ -4144,6 +4384,17 @@
 
 
                 <div class="ym-row">
+                  <div class="ym-col-info">
+                    <span class="ym-label">🛡️ Блокировать обновления приложения</span>
+                    <span class="ym-desc">Отключает уведомления и автозагрузку обновлений Яндекс Музыки для защиты мода от слетания</span>
+                  </div>
+                  <label class="ym-switch">
+                    <input type="checkbox" id="opt-block-app-updates" checked>
+                    <span class="ym-slider"></span>
+                  </label>
+                </div>
+
+                <div class="ym-row">
 
                   <div class="ym-col-info">
 
@@ -4316,7 +4567,7 @@
     const modalLogo = backdrop.querySelector(".ym-modal-logo");
     if (modalLogo) {
       modalLogo.style.cursor = "pointer";
-      modalLogo.title = "Версия v1.3.4";
+      modalLogo.title = "Версия v1.3.5";
       modalLogo.addEventListener("click", () => {
         logoClicks++;
         clearTimeout(logoTimer);
@@ -4471,6 +4722,7 @@
       btnOpenProposal.addEventListener("click", openProposalModal);
     }
 
+    const optBlockAppUpdates = document.getElementById("opt-block-app-updates");
     const optAutoQuality = document.getElementById("opt-auto-quality");
 
     const optUiScale = document.getElementById("opt-ui-scale");
@@ -4557,6 +4809,7 @@
 
     if (optDiscordRpc) optDiscordRpc.checked = modSettings["discordRPC/enabled"] !== false;
 
+    if (optBlockAppUpdates) optBlockAppUpdates.checked = modSettings["system/blockAppUpdates"] !== false;
     if (optAutoQuality) optAutoQuality.checked = modSettings["autoQuality/enabled"] !== false;
 
     if (optUiScale) optUiScale.value = String(modSettings["scale-changer/savedScale"] || "1.0");
@@ -4935,6 +5188,18 @@
 
 
 
+    if (optBlockAppUpdates) {
+      optBlockAppUpdates.addEventListener("change", () => {
+        saveSetting("system/blockAppUpdates", optBlockAppUpdates.checked);
+        if (optBlockAppUpdates.checked) {
+          removeOfficialUpdateBanners();
+          showToast("🛡️ Защита от обновлений включена");
+        } else {
+          showToast("⚠️ Защита от обновлений отключена");
+        }
+      });
+    }
+
     if (optAutoQuality) {
 
       optAutoQuality.addEventListener("change", () => {
@@ -5171,7 +5436,7 @@
 
           <span class="ym-mod-btn-text">Настройки Мода</span>
 
-          <span class="ym-mod-ver-tag">v1.3.4</span>
+          <span class="ym-mod-ver-tag">v1.3.5</span>
 
         `;
 

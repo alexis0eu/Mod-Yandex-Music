@@ -15,7 +15,7 @@ VIProductVersion "5.124.1.0"
 VIAddVersionKey "ProductName" "Яндекс Музыка Mod"
 VIAddVersionKey "CompanyName" "alexis0eu"
 VIAddVersionKey "LegalCopyright" "alexis0eu"
-VIAddVersionKey "FileDescription" "Яндекс Музыка Mod v1.3.4"
+VIAddVersionKey "FileDescription" "Яндекс Музыка Mod v1.3.5"
 VIAddVersionKey "FileVersion" "5.124.1.0"
 
 !define MUI_ICON "..\assets\icon.ico"
@@ -31,7 +31,12 @@ Section "MainSection" SEC01
     nsExec::Exec 'taskkill /F /IM "YandexMusic.exe" /T'
     Sleep 1000
 
-    DetailPrint "Копирование файлов мода..."
+    DetailPrint "Отключение официального автообновления..."
+    Delete "$INSTDIR\resources\app-update.yml"
+    Delete "$INSTDIR\resources\elevate.exe"
+    RMDir /r "$LOCALAPPDATA\yandexmusic-updater"
+
+    DetailPrint "Копирование файлов мода..." 
     SetOutPath "$INSTDIR"
     File /r "..\dist\staging\*"
 
@@ -57,8 +62,8 @@ Section "MainSection" SEC01
     System::Call 'shell32.dll::SHChangeNotify(i 0x08000000, i 0, p 0, p 0)'
 
     DetailPrint "Завершение установки..."
-    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\YandexMusic" "DisplayName" "Яндекс Музыка Mod v1.3.4"
-    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\YandexMusic" "DisplayVersion" "1.3.4"
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\YandexMusic" "DisplayName" "Яндекс Музыка Mod v1.3.5"
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\YandexMusic" "DisplayVersion" "1.3.5"
     WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\YandexMusic" "Publisher" "alexis0eu"
     WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\YandexMusic" "DisplayIcon" "$INSTDIR\resources\assets\icon.ico"
     WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\YandexMusic" "InstallLocation" "$INSTDIR"

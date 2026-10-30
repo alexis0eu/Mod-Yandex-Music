@@ -33,6 +33,19 @@ function initModMain() {
   if (settingsManager) return; // already initialized
   settingsManager = new SettingsManager();
 
+  // 0. Disable official Yandex Music Auto-Updater to prevent overwriting the mod
+  try {
+    const electronUpdater = require("electron-updater");
+    if (electronUpdater && electronUpdater.autoUpdater) {
+      electronUpdater.autoUpdater.autoDownload = false;
+      electronUpdater.autoUpdater.autoInstallOnAppQuit = false;
+      electronUpdater.autoUpdater.checkForUpdates = async () => null;
+      electronUpdater.autoUpdater.checkForUpdatesAndNotify = async () => null;
+      electronUpdater.autoUpdater.downloadUpdate = async () => null;
+      electronUpdater.autoUpdater.quitAndInstall = () => {};
+    }
+  } catch (e) {}
+
   // 1. Discord RPC
   const initialAppTitle = settingsManager.get("discordRPC/appTitle", "ru");
   const initialClientId = initialAppTitle === "en" ? "1269807014393942046" : "1283109459463377011";
@@ -665,6 +678,13 @@ function startPlayerStatePolling() {
 // SETUP IPC HANDLERS
 // ==========================================
 function setupIpcHandlers() {
+  // Prevent any official update installation from quitting and executing updater
+  try {
+    ipcMain.removeAllListeners("desktop:application:install-update");
+    ipcMain.on("desktop:application:install-update", () => {
+      console.warn("[Mod Main] Blocked official update installation request.");
+    });
+  } catch (e) {}
   // Storage API
   ipcMain.handle("yandexMusicMod.getStorageValue", (_ev, key) => {
     return settingsManager.get(key);
@@ -825,6 +845,8 @@ function setupIpcHandlers() {
         });
       };
 
+      let plainLyricsFallback = null;
+
       // 1. Tier 1: Official Yandex Music Track Supplement (Zero-latency native synced lyrics)
       if (trackId && String(trackId).match(/^\d+$/)) {
         try {
@@ -846,21 +868,24 @@ function setupIpcHandlers() {
               });
               return lrcLines.join("\n");
             } else if (lyricsObj.fullLyrics) {
-              return lyricsObj.fullLyrics;
+              plainLyricsFallback = lyricsObj.fullLyrics;
             }
           }
         } catch (e) {}
       }
 
-      // 2. Tier 2: LRCLib Direct Match with modern browser headers
+      // 2. Tier 2: LRCLib Direct Match with modern browser headers (prefer syncedLyrics)
       if (cleanTitle) {
         const query = new URLSearchParams({
           track_name: cleanTitle,
           artist_name: cleanArtist,
         }).toString();
         const direct = await fetchJson(`https://lrclib.net/api/get?${query}`);
-        if (direct && (direct.syncedLyrics || direct.plainLyrics)) {
-          return direct.syncedLyrics || direct.plainLyrics;
+        if (direct && direct.syncedLyrics) {
+          return direct.syncedLyrics;
+        }
+        if (direct && direct.plainLyrics && !plainLyricsFallback) {
+          plainLyricsFallback = direct.plainLyrics;
         }
 
         // 3. Tier 3: LRCLib Cleaned Search Fallback (strip feat., remix, remaster)
@@ -868,14 +893,33 @@ function setupIpcHandlers() {
           .replace(/\s*[\(\[][^\)\]]*(?:feat|ft|remix|edit|version|prod|remaster|soundtrack|live|official)[^\)\]]*[\)\]]/gi, "")
           .trim();
         const primaryArtist = cleanArtist.split(/[,&/]/)[0].trim();
+
+        if (strippedTitle !== cleanTitle || primaryArtist !== cleanArtist) {
+          const strippedQuery = new URLSearchParams({
+            track_name: strippedTitle,
+            artist_name: primaryArtist,
+          }).toString();
+          const directStripped = await fetchJson(`https://lrclib.net/api/get?${strippedQuery}`);
+          if (directStripped && directStripped.syncedLyrics) {
+            return directStripped.syncedLyrics;
+          }
+          if (directStripped && directStripped.plainLyrics && !plainLyricsFallback) {
+            plainLyricsFallback = directStripped.plainLyrics;
+          }
+        }
+
         const searchQuery = encodeURIComponent(`${strippedTitle} ${primaryArtist}`.trim());
         const searchRes = await fetchJson(`https://lrclib.net/api/search?q=${searchQuery}`);
         if (Array.isArray(searchRes) && searchRes.length > 0) {
           const synced = searchRes.find((x) => x.syncedLyrics);
           if (synced && synced.syncedLyrics) return synced.syncedLyrics;
           const plain = searchRes.find((x) => x.plainLyrics);
-          if (plain && plain.plainLyrics) return plain.plainLyrics;
+          if (plain && plain.plainLyrics && !plainLyricsFallback) plainLyricsFallback = plain.plainLyrics;
         }
+      }
+
+      if (plainLyricsFallback) {
+        return plainLyricsFallback;
       }
 
       return null;

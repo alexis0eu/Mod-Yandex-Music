@@ -1133,7 +1133,7 @@ button[aria-label*="Текст"] {
 }
 
 /* ==========================================
-   v1.3.4: HALLOWEEN PUMPKIN & LYRICS CONTROLS
+   v1.3.5: HALLOWEEN PUMPKIN & LYRICS CONTROLS
    ========================================== */
 @keyframes ymPumpkinFloat {
   0%, 100% {
@@ -1174,7 +1174,7 @@ button[aria-label*="Текст"] {
 }
 
 /* ==========================================
-   v1.3.4: TYPOGRAPHY SLIDER & MODAL ISOLATION
+   v1.3.5: TYPOGRAPHY SLIDER & MODAL ISOLATION
    ========================================== */
 #ym-mod-settings-modal,
 #ym-proposal-modal,
@@ -1210,7 +1210,7 @@ button[aria-label*="Текст"] {
 }
 
 /* ==========================================
-   v1.3.4: HALLOWEEN PUMPKIN ANIMATION
+   v1.3.5: HALLOWEEN PUMPKIN ANIMATION
    ========================================== */
 @keyframes ymPumpkinFloat {
   0%, 100% {
@@ -1247,7 +1247,7 @@ button[aria-label*="Текст"] {
 }
 
 /* ==========================================
-   v1.3.4: FULLSCREEN / IN-APP LYRICS STYLING
+   v1.3.5: FULLSCREEN / IN-APP LYRICS STYLING
    ========================================== */
 #ym-mod-fullscreen-lyrics {
   position: fixed !important;
@@ -1397,7 +1397,7 @@ button[aria-label*="Текст"] {
 
 
 /* ==========================================
-   v1.3.4: PROPOSAL MODAL INTERACTIVITY FIX
+   v1.3.5: PROPOSAL MODAL INTERACTIVITY FIX
    ========================================== */
 #ym-proposal-modal {
   pointer-events: auto !important;
@@ -1426,7 +1426,7 @@ button[aria-label*="Текст"] {
 }
 
 /* ==========================================
-   v1.3.4: ENHANCED HALLOWEEN DECORATIONS (GOTHIC WEBS & GIANT PUMPKINS)
+   v1.3.5: ENHANCED HALLOWEEN DECORATIONS (GOTHIC WEBS & GIANT PUMPKINS)
    ========================================== */
 #ym-halloween-decorations {
   position: fixed !important;
@@ -1555,38 +1555,42 @@ button[aria-label*="Текст"] {
 }
 
 /* ==========================================
-   v1.3.4: APPLE MUSIC GLASSMORPHIC MINI-PLAYER & SYNCED LYRICS
+   v1.3.5: APPLE MUSIC GLASSMORPHIC MINI-PLAYER & SYNCED LYRICS (PIXEL-PERFECT)
    ========================================== */
 #ym-mod-fullscreen-lyrics {
   position: fixed !important;
-  width: 400px !important;
+  width: 385px !important;
   max-width: calc(100vw - 32px) !important;
-  background: rgba(24, 25, 30, 0.88) !important;
+  height: 560px !important;
+  max-height: calc(100vh - 100px) !important;
+  background: rgba(22, 23, 27, 0.88) !important;
   backdrop-filter: blur(50px) saturate(200%) !important;
   -webkit-backdrop-filter: blur(50px) saturate(200%) !important;
   border: 1px solid rgba(255, 255, 255, 0.14) !important;
   border-radius: 20px !important;
-  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.85), 0 0 1px rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.88), 0 0 1px rgba(255, 255, 255, 0.3) !important;
   display: flex !important;
   flex-direction: column !important;
   z-index: 10000 !important;
   overflow: hidden !important;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif !important;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif !important;
   transition: height 0.32s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 #ym-mod-fullscreen-lyrics.ym-fs-lyrics-docked {
   top: 70px !important;
   right: 24px !important;
-  bottom: 95px !important;
   left: auto !important;
-  height: auto !important;
+  bottom: auto !important;
   transform: none !important;
 }
 
 #ym-mod-fullscreen-lyrics.ym-am-compact {
-  bottom: auto !important;
-  height: 175px !important;
+  height: 180px !important;
+}
+
+#ym-mod-fullscreen-lyrics.ym-am-mode-artwork {
+  height: 510px !important;
 }
 
 /* Ambient Artwork Glow Layer */
@@ -1595,8 +1599,8 @@ button[aria-label*="Текст"] {
   inset: -30px !important;
   background-size: cover !important;
   background-position: center !important;
-  filter: blur(55px) brightness(0.4) saturate(180%) !important;
-  opacity: 0.65 !important;
+  filter: blur(60px) brightness(0.38) saturate(190%) !important;
+  opacity: 0.7 !important;
   pointer-events: none !important;
   z-index: 0 !important;
   transition: background-image 0.5s ease, opacity 0.5s ease !important;
@@ -1635,6 +1639,12 @@ button[aria-label*="Текст"] {
   object-fit: cover !important;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5) !important;
   flex-shrink: 0 !important;
+  cursor: pointer !important;
+  transition: transform 0.2s ease !important;
+}
+
+.ym-am-cover:hover {
+  transform: scale(1.05) !important;
 }
 
 .ym-am-meta {
@@ -1721,13 +1731,13 @@ button[aria-label*="Текст"] {
   z-index: 2 !important;
   flex: 1 !important;
   overflow-y: auto !important;
-  padding: 26px 20px !important;
+  padding: 24px 20px !important;
   display: flex !important;
   flex-direction: column !important;
-  gap: 14px !important;
+  gap: 16px !important;
   scroll-behavior: smooth !important;
-  mask-image: linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%) !important;
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%) !important;
+  mask-image: linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%) !important;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%) !important;
 }
 
 .ym-am-compact .ym-am-lyrics-body {
@@ -1738,21 +1748,31 @@ button[aria-label*="Текст"] {
 .ym-am-lrc-line {
   font-size: 23px !important;
   font-weight: 700 !important;
-  color: rgba(255, 255, 255, 0.28) !important;
+  color: rgba(255, 255, 255, 0.3) !important;
   line-height: 1.35 !important;
   cursor: pointer !important;
-  transition: all 0.35s cubic-bezier(0.2, 0.9, 0.3, 1) !important;
+  transition: all 0.32s cubic-bezier(0.16, 1, 0.3, 1) !important;
   padding: 8px 14px !important;
   border-radius: 12px !important;
   transform-origin: left center !important;
-  filter: blur(0.2px) !important;
+  filter: blur(0.25px) !important;
   letter-spacing: -0.3px !important;
 }
 
 .ym-am-lrc-line:hover {
-  color: rgba(255, 255, 255, 0.65) !important;
-  background: rgba(255, 255, 255, 0.04) !important;
+  color: rgba(255, 255, 255, 0.75) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
   filter: none !important;
+}
+
+.ym-am-lrc-line.ym-am-lrc-past {
+  color: rgba(255, 255, 255, 0.35) !important;
+  font-size: 22px !important;
+}
+
+.ym-am-lrc-line.ym-am-lrc-future {
+  color: rgba(255, 255, 255, 0.28) !important;
+  font-size: 22px !important;
 }
 
 .ym-am-lrc-line.ym-am-lrc-active {
@@ -1760,10 +1780,10 @@ button[aria-label*="Текст"] {
   font-size: 26px !important;
   font-weight: 800 !important;
   opacity: 1 !important;
-  transform: scale(1.04) !important;
+  transform: scale(1.03) !important;
   filter: none !important;
   text-shadow: 0 0 24px rgba(255, 255, 255, 0.45), 0 2px 10px rgba(0, 0, 0, 0.7) !important;
-  background: rgba(255, 255, 255, 0.05) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
 }
 
 /* Empty Lyrics View (Image 3) */
@@ -1775,6 +1795,69 @@ button[aria-label*="Текст"] {
   font-weight: 600 !important;
   padding: 40px 20px !important;
   line-height: 1.5 !important;
+}
+
+/* Large Artwork Mode (Image 4) */
+.ym-am-artwork-view {
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 100% !important;
+  padding: 10px 20px 20px 20px !important;
+}
+
+.ym-am-pip-btn {
+  position: absolute !important;
+  top: 6px !important;
+  left: 10px !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  border-radius: 8px !important;
+  padding: 6px !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s ease !important;
+}
+
+.ym-am-pip-btn:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: #ffffff !important;
+}
+
+.ym-am-art-card {
+  width: 250px !important;
+  height: 250px !important;
+  border-radius: 14px !important;
+  overflow: hidden !important;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.75), 0 0 1px rgba(255, 255, 255, 0.25) !important;
+  margin-bottom: 18px !important;
+}
+
+.ym-am-large-art {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+.ym-am-art-meta {
+  text-align: center !important;
+  width: 100% !important;
+}
+
+.ym-am-art-title {
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  color: #ffffff !important;
+  margin-bottom: 4px !important;
+}
+
+.ym-am-art-artist {
+  font-size: 14px !important;
+  color: rgba(255, 255, 255, 0.7) !important;
 }
 
 /* Bottom Player Controls Bar */
@@ -1888,6 +1971,41 @@ button[aria-label*="Текст"] {
 
 .ym-am-btn.ym-am-btn-lyrics.active {
   color: #ffffff !important;
-  background: rgba(147, 51, 234, 0.35) !important;
-  box-shadow: 0 0 14px rgba(147, 51, 234, 0.5) !important;
+  background: rgba(255, 255, 255, 0.22) !important;
+  border-radius: 6px !important;
+}
+
+/* Dedicated MiniPlayer Launcher in Desktop Playerbar */
+.ym-player-miniplayer-btn {
+  margin-left: 4px !important;
+}
+
+/* ==========================================
+   v1.3.5: BLOCK YANDEX MUSIC OFFICIAL APP UPDATES
+   ========================================== */
+div[class*="NotificationUpdate_root"],
+div[class*="NotificationUpdate_important"],
+div[class*="NotificationUpdate_message"],
+div[class*="NotificationUpdate_text"],
+div[class*="NotificationUpdate_button"],
+div[class*="NotificationUpdate"],
+div[class*="Notification_root"],
+button[data-test-id*="APP_UPDATE_NOTIFICATION_BUTTON"],
+button[data-test-id*="appUpdate"],
+[data-test-id="APP_UPDATE_NOTIFICATION_BUTTON"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  height: 0 !important;
+  width: 0 !important;
+  max-height: 0 !important;
+  max-width: 0 !important;
+  overflow: hidden !important;
+  position: absolute !important;
+  top: -9999px !important;
+  left: -9999px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  transform: scale(0) !important;
 }

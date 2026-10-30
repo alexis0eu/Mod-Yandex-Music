@@ -336,6 +336,18 @@ def inject_mod(asar_path=DEFAULT_ASAR):
 
 
 
+        # Neuter autoUpdater in index.js to prevent background checks and auto-installs
+        if "electronUpdater.autoUpdater.checkForUpdates()" in index_content:
+            index_content = index_content.replace(
+                "const updateResult = await electronUpdater.autoUpdater.checkForUpdates();",
+                "const updateResult = null; // Blocked by Yandex Music Mod"
+            )
+        if "electronUpdater.autoUpdater.quitAndInstall();" in index_content:
+            index_content = index_content.replace(
+                "electronUpdater.autoUpdater.quitAndInstall();",
+                "// electronUpdater.autoUpdater.quitAndInstall(); Blocked by Mod"
+            )
+
         if "yandexMusicMod/main.js" not in index_content:
 
             injection_hook = """
@@ -498,6 +510,16 @@ try {
 
                         print(f"[+] Permanently disabled Top Advert Banner in {file}!")
 
+                    # Permanently disable official update notification banner in Next.js chunks
+                    if 'className:(0,C.$)(N().root,N().important),message:s})' in c:
+                        c = c.replace(
+                            'return(0,o.jsx)(x.$,{className:(0,C.$)(N().root,N().important),message:s})',
+                            'return null; // Blocked by Yandex Music Mod'
+                        )
+                        with open(chunk_path, "w", encoding="utf-8") as f:
+                            f.write(c)
+                        print(f"[+] Permanently disabled Update Notification Banner in {file}!")
+
 
 
         # 12. Repack staging directory into target ASAR
@@ -582,6 +604,27 @@ try {
             print(f"[!] Warning: Could not update application icons: {e}")
 
 
+
+        
+        # Neutralize app-update.yml to block downloads
+        resources_dir = os.path.dirname(asar_path)
+        app_update_yml = os.path.join(resources_dir, "app-update.yml")
+        if os.path.exists(app_update_yml):
+            try:
+                with open(app_update_yml, "w", encoding="utf-8") as yf:
+                    yf.write("provider: generic\nurl: http://127.0.0.1:0/\nuseMultipleRangeRequest: false\nupdaterCacheDirName: yandexmusic-updater\n")
+                print("[+] Neutralized resources/app-update.yml to block downloads.")
+            except Exception as e:
+                print(f"[!] Warning neutralizing app-update.yml: {e}")
+
+        # Clear updater cache directory in %LOCALAPPDATA%
+        updater_cache = os.path.expandvars(r"%LOCALAPPDATA%\yandexmusic-updater")
+        if os.path.exists(updater_cache):
+            try:
+                shutil.rmtree(updater_cache, ignore_errors=True)
+                print("[+] Cleared updater cache directory.")
+            except Exception:
+                pass
 
         print(f"[+] YANDEX MUSIC MOD INJECTED SUCCESSFULLY!")
 
