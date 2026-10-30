@@ -1989,7 +1989,6 @@ div[class*="NotificationUpdate_message"],
 div[class*="NotificationUpdate_text"],
 div[class*="NotificationUpdate_button"],
 div[class*="NotificationUpdate"],
-div[class*="Notification_root"],
 button[data-test-id*="APP_UPDATE_NOTIFICATION_BUTTON"],
 button[data-test-id*="appUpdate"],
 [data-test-id="APP_UPDATE_NOTIFICATION_BUTTON"] {

@@ -510,15 +510,7 @@ try {
 
                         print(f"[+] Permanently disabled Top Advert Banner in {file}!")
 
-                    # Permanently disable official update notification banner in Next.js chunks
-                    if 'className:(0,C.$)(N().root,N().important),message:s})' in c:
-                        c = c.replace(
-                            'return(0,o.jsx)(x.$,{className:(0,C.$)(N().root,N().important),message:s})',
-                            'return null; // Blocked by Yandex Music Mod'
-                        )
-                        with open(chunk_path, "w", encoding="utf-8") as f:
-                            f.write(c)
-                        print(f"[+] Permanently disabled Update Notification Banner in {file}!")
+
 
 
 

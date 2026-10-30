@@ -264,7 +264,7 @@
       const els = document.querySelectorAll(sel);
       for (const el of els) {
         try {
-          const root = el.closest('div[class*="NotificationUpdate_root"]') || el.closest('[class*="Notification_root"]') || el;
+          const root = el.closest('div[class*="NotificationUpdate_root"]') || el;
           root.remove();
         } catch (e) {}
       }
