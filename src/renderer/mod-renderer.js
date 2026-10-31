@@ -1,7 +1,7 @@
 (function () {
 
 // ==========================================
-// 0. AUDIO ELEMENT CAPTURE (v1.3.11)
+// 0. AUDIO ELEMENT CAPTURE (v1.3.12)
 // Intercepts detached <audio> elements created by Yandex Music Yasp player
 // ==========================================
 (function setupAudioCapture() {
@@ -1753,6 +1753,22 @@
   let isUserScrolling = false;
   let userScrollTimeout = null;
 
+  function calculateLineWeight(text) {
+    const clean = (text || "").replace(/\[[^\]]*\]/g, "").trim();
+    const vowels = (clean.match(/[аеёиоуыэюяaeiouy]/gi) || []).length;
+    const words = clean.split(/\s+/).filter(Boolean).length;
+    let weight = vowels * 1.0 + words * 0.35;
+    if (/[,!?;:—\-]/.test(clean)) weight += 0.8;
+    return Math.max(1.8, weight);
+  }
+
+  function isSectionHeader(text) {
+    const trimmed = (text || "").trim();
+    if (/^\[(интро|припев|куплет|бридж|аутро|скит|текст песни|intro|chorus|verse|bridge|outro|hook|drop|pre-chorus|post-chorus)[^\]]*\]$/i.test(trimmed)) return true;
+    if (/^\[[^\]]+\]$/.test(trimmed)) return true;
+    return false;
+  }
+
   function parseLrcToLines(lrc, duration = 0) {
     if (!lrc) return [];
     if (Array.isArray(lrc)) return lrc;
@@ -1792,21 +1808,51 @@
 
     if (hasAnyTime) {
       // Keep only timed lines or clean text, sorted by timestamp
-      const timed = lines.filter((l) => l.time >= 0).sort((a, b) => a.time - b.time);
+      const timed = lines.filter((l) => l.time >= 0 && l.text && !/^\[[^\]]+\]$/.test(l.text.trim())).sort((a, b) => a.time - b.time);
       return timed.length > 0 ? timed : lines;
     }
 
-    if (!hasAnyTime && lines.length > 0) {
+    // Filter out bracket headers & metadata for plain lyrics
+    const cleanLines = lines.filter((l) => {
+      const txt = (l.text || "").trim();
+      if (!txt) return false;
+      const lower = txt.toLowerCase();
+      if (lower.startsWith("[текст песни") || lower.startsWith("[lyrics of")) return false;
+      if (lower.includes("contributors") || lower.includes("translations") || lower.includes("you might also like")) return false;
+      if (txt === "♫ текст этой песни недоступен." || txt === "текст этой песни недоступен.") return false;
+      if (isSectionHeader(txt)) return false;
+      return true;
+    });
+
+    if (cleanLines.length > 0) {
       const activeAudio = typeof window.__ymGetActiveAudio === "function" ? window.__ymGetActiveAudio() : null;
       const dur = duration > 0 ? duration : (activeAudio && activeAudio.duration ? activeAudio.duration : 180);
-      const startOffset = Math.min(3, dur * 0.03);
-      const availableTime = Math.max(10, dur - startOffset - 2);
-      const step = availableTime / Math.max(1, lines.length);
-      lines.forEach((l, idx) => {
-        l.time = +(startOffset + idx * step).toFixed(2);
+      const title = (currentTrackTitle || "").toLowerCase();
+      const isSpeedUp = /speed\s*up|sped\s*up|nightcore|fast/i.test(title);
+      const isSlowed = /slowed|reverb/i.test(title);
+
+      let introOffset = isSpeedUp ? 5.5 : 8.5;
+      if (isSlowed) introOffset = 11.0;
+      if (dur < 75) introOffset = Math.min(introOffset, dur * 0.12);
+
+      let outroTail = isSpeedUp ? 5.0 : 7.5;
+      if (isSlowed) outroTail = 10.0;
+      if (dur < 75) outroTail = Math.min(outroTail, dur * 0.10);
+
+      const availableTime = Math.max(10, dur - introOffset - outroTail);
+      const weights = cleanLines.map((l) => calculateLineWeight(l.text));
+      const totalWeight = weights.reduce((sum, w) => sum + w, 0) || 1;
+
+      let currentTime = introOffset;
+      cleanLines.forEach((l, idx) => {
+        const lineDur = (weights[idx] / totalWeight) * availableTime;
+        l.time = +(currentTime).toFixed(2);
+        l.duration = +(lineDur).toFixed(2);
         l.isSyntheticTime = true;
+        currentTime += lineDur;
       });
-      return lines;
+
+      return cleanLines;
     }
 
     return lines;
@@ -1902,7 +1948,7 @@
 
     renderLyricsBodyUI();
 
-    // Broadcast to Karaoke window and Overlay (v1.3.11: include parsed lines, trackId, and cover)
+    // Broadcast to Karaoke window and Overlay (v1.3.12: include parsed lines, trackId, and cover)
     if (window.yandexMusicMod && window.yandexMusicMod.updateLyrics) {
       window.yandexMusicMod.updateLyrics({
         track: cleanTitle,
@@ -2413,7 +2459,7 @@
   // ==========================================
   // v1.3.2: AUTO-UPDATER & COMMUNITY STATS
   // ==========================================
-  const CURRENT_MOD_VERSION = "v1.3.11";
+  const CURRENT_MOD_VERSION = "v1.3.12";
 
   async function checkModUpdates() {
     try {
@@ -2858,7 +2904,7 @@
       div, span, p, a, h1, h2, h3, h4, h5, h6 {
         ${fontRule}
       }
-      /* Prevent modal and lyrics distortion from global font scaling (v1.3.11) */
+      /* Prevent modal and lyrics distortion from global font scaling (v1.3.12) */
       #ym-mod-settings-modal, #ym-proposal-modal, #ym-mod-fullscreen-lyrics, .ym-mod-modal {
         font-size: ${Math.round(14 * modalSizeScale)}px !important;
       }
@@ -3381,7 +3427,7 @@
 
             <div class="ym-modal-title">Настройки Мода</div>
 
-            <div class="ym-modal-version">v1.3.11 (YM 5.124.1)</div>
+            <div class="ym-modal-version">v1.3.12 (YM 5.124.1)</div>
 
           </div>
 
@@ -5631,7 +5677,7 @@
 
           <span class="ym-mod-btn-text">Настройки Мода</span>
 
-          <span class="ym-mod-ver-tag">v1.3.11</span>
+          <span class="ym-mod-ver-tag">v1.3.12</span>
 
         `;
 

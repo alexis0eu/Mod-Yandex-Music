@@ -76,6 +76,14 @@
 
     <!-- Scrolling Lyrics Area (Expanded Apple Music Mode - matches reference) -->
     <div class="am-expanded-lyrics no-drag hidden" id="am-expanded-lyrics">
+      <div class="am-lyrics-header-bar" id="am-lyrics-header-bar">
+        <span class="am-lyrics-status" id="am-lyrics-status">СИНХРОНИЗАЦИЯ</span>
+        <div class="am-sync-controls" id="am-sync-controls" title="Точная подгонка текста (Горячие клавиши: [ назад, ] вперед, 0 сброс. Alt+Клик по строке для мгновенной привязки)">
+          <button class="am-sync-btn" id="btn-sync-sub" title="Сдвиг назад на 0.5 сек ([)">-0.5s</button>
+          <button class="am-sync-pill" id="btn-sync-reset" title="Сбросить смещение (клик для сброса)"><span id="am-sync-val">Синхр</span></button>
+          <button class="am-sync-btn" id="btn-sync-add" title="Сдвиг вперед на 0.5 сек (])">+0.5s</button>
+        </div>
+      </div>
       <div class="am-lyrics-scroll" id="am-lyrics-scroll">
         <div class="am-lyrics-empty" id="am-lyrics-empty">Текст этой песни недоступен.</div>
       </div>

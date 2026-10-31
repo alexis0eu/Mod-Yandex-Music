@@ -1,10 +1,13 @@
-// Apple Music macOS MiniPlayer Overlay Controller (v1.3.11)
+// Apple Music macOS MiniPlayer Overlay Controller (v1.3.12)
 // Real-time 60fps interpolation, 1-in-1 lyrics synchronization, smooth centering scroll, click-to-seek
 
 const isBrowser = typeof window !== "undefined" && typeof document !== "undefined";
 
 let currentTrack = null;
 let currentTrackKey = "";
+let currentTrackTitle = "";
+let currentTrackArtist = "";
+let currentTrackOffset = 0; // Manual / calibrated offset in seconds (effectivePos = pos + currentTrackOffset)
 let isPlaying = false;
 let isGhostMode = false;
 let currentViewMode = "compact"; // "compact" | "lyrics" | "artwork"
@@ -41,6 +44,11 @@ const compactLine = isBrowser ? document.getElementById("am-compact-line") : nul
 const expandedLyrics = isBrowser ? document.getElementById("am-expanded-lyrics") : null;
 const lyricsScroll = isBrowser ? document.getElementById("am-lyrics-scroll") : null;
 const artworkView = isBrowser ? document.getElementById("am-artwork-view") : null;
+
+const btnSyncSub = isBrowser ? document.getElementById("btn-sync-sub") : null;
+const btnSyncAdd = isBrowser ? document.getElementById("btn-sync-add") : null;
+const btnSyncReset = isBrowser ? document.getElementById("btn-sync-reset") : null;
+const syncVal = isBrowser ? document.getElementById("am-sync-val") : null;
 
 const btnGhost = isBrowser ? document.getElementById("btn-ghost") : null;
 const btnCompact = isBrowser ? document.getElementById("btn-compact") : null;
@@ -110,6 +118,110 @@ function formatRemainingTime(seconds, duration) {
   return `-${formatTime(rem)}`;
 }
 
+function getTrackOffsetKey(title, artist) {
+  const t = (title || "").trim().toLowerCase().replace(/[^a-zа-я0-9]/gi, "_");
+  const a = (artist || "").trim().toLowerCase().replace(/[^a-zа-я0-9]/gi, "_");
+  return `ym_lrc_offset_${t}_${a}`;
+}
+
+function loadTrackOffset(title, artist) {
+  try {
+    if (!title) return 0;
+    const key = getTrackOffsetKey(title, artist);
+    const saved = localStorage.getItem(key);
+    return saved !== null ? parseFloat(saved) : 0;
+  } catch (e) {
+    return 0;
+  }
+}
+
+function saveTrackOffset(title, artist, offset) {
+  try {
+    if (!title) return;
+    const key = getTrackOffsetKey(title, artist);
+    if (Math.abs(offset) < 0.01) {
+      localStorage.removeItem(key);
+    } else {
+      localStorage.setItem(key, offset.toFixed(1));
+    }
+  } catch (e) {}
+}
+
+function updateSyncUI() {
+  if (!syncVal) return;
+  if (Math.abs(currentTrackOffset) < 0.01) {
+    syncVal.textContent = "Синхр";
+    if (btnSyncReset) btnSyncReset.classList.remove("adjusted");
+  } else {
+    const sign = currentTrackOffset > 0 ? "+" : "";
+    syncVal.textContent = `${sign}${currentTrackOffset.toFixed(1)}s`;
+    if (btnSyncReset) btnSyncReset.classList.add("adjusted");
+  }
+}
+
+function adjustOffset(delta) {
+  currentTrackOffset = Math.round((currentTrackOffset + delta) * 10) / 10;
+  saveTrackOffset(currentTrackTitle, currentTrackArtist, currentTrackOffset);
+  updateSyncUI();
+  const pos = getInterpolatedPosition();
+  syncLyricsPosition(pos);
+}
+
+function resetOffset() {
+  currentTrackOffset = 0;
+  saveTrackOffset(currentTrackTitle, currentTrackArtist, 0);
+  updateSyncUI();
+  const pos = getInterpolatedPosition();
+  syncLyricsPosition(pos);
+}
+
+function calculateLineWeight(text) {
+  const clean = (text || "").replace(/\[[^\]]*\]/g, "").trim();
+  const vowels = (clean.match(/[аеёиоуыэюяaeiouy]/gi) || []).length;
+  const words = clean.split(/\s+/).filter(Boolean).length;
+  let weight = vowels * 1.0 + words * 0.35;
+  if (/[,!?;:—\-]/.test(clean)) weight += 0.8;
+  return Math.max(1.8, weight);
+}
+
+function isSectionHeader(text) {
+  const trimmed = (text || "").trim();
+  if (/^\[(интро|припев|куплет|бридж|аутро|скит|текст песни|intro|chorus|verse|bridge|outro|hook|drop|pre-chorus|post-chorus)[^\]]*\]$/i.test(trimmed)) return true;
+  if (/^\[[^\]]+\]$/.test(trimmed)) return true;
+  return false;
+}
+
+function applySyntheticTimings(items, duration, trackTitle) {
+  if (!items || items.length === 0) return items;
+  const effDur = duration > 0 ? duration : (trackDuration > 0 ? trackDuration : 180);
+  const title = (trackTitle || "").toLowerCase();
+  const isSpeedUp = /speed\s*up|sped\s*up|nightcore|fast/i.test(title);
+  const isSlowed = /slowed|reverb/i.test(title);
+
+  let introOffset = isSpeedUp ? 5.5 : 8.5;
+  if (isSlowed) introOffset = 11.0;
+  if (effDur < 75) introOffset = Math.min(introOffset, effDur * 0.12);
+
+  let outroTail = isSpeedUp ? 5.0 : 7.5;
+  if (isSlowed) outroTail = 10.0;
+  if (effDur < 75) outroTail = Math.min(outroTail, effDur * 0.10);
+
+  const availableVocalTime = Math.max(10, effDur - introOffset - outroTail);
+  const weights = items.map((it) => calculateLineWeight(it.text));
+  const totalWeight = weights.reduce((sum, w) => sum + w, 0) || 1;
+
+  let currentTime = introOffset;
+  items.forEach((item, idx) => {
+    const lineDur = (weights[idx] / totalWeight) * availableVocalTime;
+    item.time = +(currentTime).toFixed(2);
+    item.duration = +(lineDur).toFixed(2);
+    item.isSyntheticTime = true;
+    currentTime += lineDur;
+  });
+
+  return items;
+}
+
 function parseLRC(lrcText, duration = 0) {
   if (!lrcText) return [];
   let items = [];
@@ -131,9 +243,11 @@ function parseLRC(lrcText, duration = 0) {
           t = Number(item.offset) > 1000 ? Number(item.offset) / 1000 : Number(item.offset);
         }
         if (t >= 0) hasExplicitTime = true;
+        if (t >= 0 && !item.isSyntheticTime) hasExplicitTime = true;
         return {
           time: t,
           text: (item.text || item.line || "").trim(),
+          isSyntheticTime: !!item.isSyntheticTime,
         };
       })
       .filter((x) => x.text && x.text.trim());
@@ -190,29 +304,23 @@ function parseLRC(lrcText, duration = 0) {
 
   if (items.length === 0) return [];
 
-  // Filter out meta headers like "[Текст песни ...]", contributors, translations
+  // Filter out meta headers and unsung section headers like [Припев], [Куплет]
   items = items.filter((x) => {
-    const txt = (x.text || "").trim().toLowerCase();
+    const txt = (x.text || "").trim();
     if (!txt) return false;
-    if (txt.startsWith("[текст песни") || txt.startsWith("[lyrics of")) return false;
-    if (txt.includes("contributors") || txt.includes("translations")) return false;
+    const lower = txt.toLowerCase();
+    if (lower.startsWith("[текст песни") || lower.startsWith("[lyrics of")) return false;
+    if (lower.includes("contributors") || lower.includes("translations") || lower.includes("you might also like")) return false;
     if (txt === "♫ текст этой песни недоступен." || txt === "текст этой песни недоступен.") return false;
+    if (!hasExplicitTime && isSectionHeader(txt)) return false;
     return true;
   });
 
   if (items.length === 0) return [];
 
-  // If track has plain lyrics without LRC timestamps, distribute them evenly across duration!
+  // If track has plain lyrics without explicit LRC timestamps, apply syllable-weighted timing
   if (!hasExplicitTime) {
-    const effDur = duration > 0 ? duration : (trackDuration > 0 ? trackDuration : 180);
-    const startOffset = Math.min(3, effDur * 0.03);
-    const availableTime = Math.max(10, effDur - startOffset - 2);
-    const step = availableTime / Math.max(1, items.length);
-
-    items.forEach((item, idx) => {
-      item.time = +(startOffset + idx * step).toFixed(2);
-      item.isSyntheticTime = true;
-    });
+    items = applySyntheticTimings(items, duration, currentTrackTitle);
   } else {
     items.sort((a, b) => a.time - b.time);
   }
@@ -245,16 +353,14 @@ function renderProgress(pos) {
 
 function findActiveLyricIndex(pos) {
   if (!overlayLyrics || overlayLyrics.length === 0) return -1;
+  const effectivePos = pos + currentTrackOffset;
   let activeIdx = -1;
   for (let i = 0; i < overlayLyrics.length; i++) {
-    if (overlayLyrics[i].time <= pos + 0.15) {
+    if (overlayLyrics[i].time <= effectivePos + 0.15) {
       activeIdx = i;
     } else {
       break;
     }
-  }
-  if (activeIdx === -1 && overlayLyrics.length > 0 && pos >= 0) {
-    activeIdx = 0;
   }
   return activeIdx;
 }
@@ -268,10 +374,17 @@ function syncLyricsPosition(pos) {
   const activeIdx = findActiveLyricIndex(pos);
 
   // Update Compact Karaoke Line
-  if (compactLine && activeIdx >= 0 && activeIdx < overlayLyrics.length) {
-    const targetText = overlayLyrics[activeIdx].text;
-    if (compactLine.textContent !== targetText) {
-      compactLine.textContent = targetText;
+  if (compactLine) {
+    if (activeIdx >= 0 && activeIdx < overlayLyrics.length) {
+      const targetText = overlayLyrics[activeIdx].text;
+      if (compactLine.textContent !== targetText) {
+        compactLine.textContent = targetText;
+      }
+    } else {
+      const introText = currentTrackTitle ? `♫ [Вступление] • ${currentTrackTitle}` : "♫ Синхронизация текста...";
+      if (compactLine.textContent !== introText) {
+        compactLine.textContent = introText;
+      }
     }
   }
 
@@ -313,25 +426,36 @@ function renderFullLyricsUI() {
   lyricsScroll.innerHTML = overlayLyrics
     .map((item, idx) => {
       const isActive = idx === activeIdx;
-      return `<div class="am-lrc-line ${isActive ? "active" : ""}" data-idx="${idx}" data-time="${item.time}">${escapeHtml(item.text)}</div>`;
+      return `<div class="am-lrc-line ${isActive ? "active" : ""}" data-idx="${idx}" data-time="${item.time}" title="Клик: перемотка к строке. Alt+Клик: синхронизировать строку с текущей секундой">${escapeHtml(item.text)}</div>`;
     })
     .join("");
 
   overlayLyricsIndex = activeIdx;
 
   lyricsScroll.querySelectorAll(".am-lrc-line").forEach((el) => {
-    el.addEventListener("click", () => {
+    el.addEventListener("click", (e) => {
       const t = parseFloat(el.getAttribute("data-time"));
-      if (!isNaN(t) && t >= 0) {
-        basePosition = t;
-        baseTimestamp = (typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now();
-        renderProgress(t);
-        if (typeof window !== "undefined" && window.overlayApi) {
-          const sendFn = window.overlayApi.sendPlayerAction || window.overlayApi.sendAction;
-          if (typeof sendFn === "function") {
-            const dur = trackDuration > 0 ? trackDuration : 1;
-            sendFn("seek", { position: t, progress: t / dur });
-          }
+      if (isNaN(t) || t < 0) return;
+
+      // Magic Sync / Click-to-Align: Alt+Click or Shift+Click aligns this line to current audio position
+      if (e.altKey || e.shiftKey) {
+        const curPos = getInterpolatedPosition();
+        const delta = Math.round((t - curPos) * 10) / 10;
+        currentTrackOffset = delta;
+        saveTrackOffset(currentTrackTitle, currentTrackArtist, currentTrackOffset);
+        updateSyncUI();
+        syncLyricsPosition(curPos);
+        return;
+      }
+
+      basePosition = t;
+      baseTimestamp = (typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now();
+      renderProgress(t);
+      if (typeof window !== "undefined" && window.overlayApi) {
+        const sendFn = window.overlayApi.sendPlayerAction || window.overlayApi.sendAction;
+        if (typeof sendFn === "function") {
+          const dur = trackDuration > 0 ? trackDuration : 1;
+          sendFn("seek", { position: t, progress: t / dur });
         }
       }
     });
@@ -477,6 +601,17 @@ function updateUI(state) {
 
     if (isNewTrack) {
       currentTrackKey = newTrackKey;
+      currentTrackTitle = track.title || "";
+      let newArtists = "";
+      if (Array.isArray(track.artists)) {
+        newArtists = track.artists.map((a) => (typeof a === "object" ? a.name : a)).join(", ");
+      } else {
+        newArtists = track.artists || "";
+      }
+      currentTrackArtist = newArtists;
+      currentTrackOffset = loadTrackOffset(currentTrackTitle, currentTrackArtist);
+      updateSyncUI();
+
       if (lyricsTrackKey !== newTrackKey) {
         overlayLyrics = [];
         overlayLyricsIndex = -1;
@@ -533,12 +668,7 @@ function updateUI(state) {
       const durChanged = Math.abs(newDur - trackDuration) > 1;
       trackDuration = newDur;
       if (durChanged && overlayLyrics && overlayLyrics.length > 0 && overlayLyrics[0].isSyntheticTime) {
-        const startOffset = Math.min(3, trackDuration * 0.03);
-        const availableTime = Math.max(10, trackDuration - startOffset - 2);
-        const step = availableTime / Math.max(1, overlayLyrics.length);
-        overlayLyrics.forEach((item, idx) => {
-          item.time = +(startOffset + idx * step).toFixed(2);
-        });
+        overlayLyrics = applySyntheticTimings(overlayLyrics, trackDuration, currentTrackTitle);
       }
     }
     playbackSpeed = newSpeed > 0 ? newSpeed : 1.0;
@@ -638,7 +768,32 @@ if (btnVol) {
 if (btnLyricsToggle) {
   btnLyricsToggle.addEventListener("click", () => {
     if (currentViewMode === "lyrics") {
-      setViewMode("compact");
+      
+// Lyrics Sync Buttons & Keyboard Calibration ([ / ] / 0)
+if (btnSyncSub) {
+  btnSyncSub.addEventListener("click", () => adjustOffset(-0.5));
+}
+if (btnSyncAdd) {
+  btnSyncAdd.addEventListener("click", () => adjustOffset(0.5));
+}
+if (btnSyncReset) {
+  btnSyncReset.addEventListener("click", () => resetOffset());
+}
+
+if (isBrowser) {
+  window.addEventListener("keydown", (e) => {
+    if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) return;
+    if (e.key === "[" || e.code === "BracketLeft") {
+      adjustOffset(-0.5);
+    } else if (e.key === "]" || e.code === "BracketRight") {
+      adjustOffset(0.5);
+    } else if (e.key === "0" || e.code === "Digit0") {
+      resetOffset();
+    }
+  });
+}
+
+setViewMode("compact");
     } else {
       setViewMode("lyrics");
     }
@@ -650,7 +805,32 @@ if (btnCompact) {
     if (currentViewMode === "compact") {
       setViewMode("lyrics");
     } else {
-      setViewMode("compact");
+      
+// Lyrics Sync Buttons & Keyboard Calibration ([ / ] / 0)
+if (btnSyncSub) {
+  btnSyncSub.addEventListener("click", () => adjustOffset(-0.5));
+}
+if (btnSyncAdd) {
+  btnSyncAdd.addEventListener("click", () => adjustOffset(0.5));
+}
+if (btnSyncReset) {
+  btnSyncReset.addEventListener("click", () => resetOffset());
+}
+
+if (isBrowser) {
+  window.addEventListener("keydown", (e) => {
+    if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) return;
+    if (e.key === "[" || e.code === "BracketLeft") {
+      adjustOffset(-0.5);
+    } else if (e.key === "]" || e.code === "BracketRight") {
+      adjustOffset(0.5);
+    } else if (e.key === "0" || e.code === "Digit0") {
+      resetOffset();
+    }
+  });
+}
+
+setViewMode("compact");
     }
   });
 }
@@ -658,7 +838,32 @@ if (btnCompact) {
 if (btnPopout) {
   btnPopout.addEventListener("click", () => {
     if (currentViewMode === "lyrics") {
-      setViewMode("compact");
+      
+// Lyrics Sync Buttons & Keyboard Calibration ([ / ] / 0)
+if (btnSyncSub) {
+  btnSyncSub.addEventListener("click", () => adjustOffset(-0.5));
+}
+if (btnSyncAdd) {
+  btnSyncAdd.addEventListener("click", () => adjustOffset(0.5));
+}
+if (btnSyncReset) {
+  btnSyncReset.addEventListener("click", () => resetOffset());
+}
+
+if (isBrowser) {
+  window.addEventListener("keydown", (e) => {
+    if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) return;
+    if (e.key === "[" || e.code === "BracketLeft") {
+      adjustOffset(-0.5);
+    } else if (e.key === "]" || e.code === "BracketRight") {
+      adjustOffset(0.5);
+    } else if (e.key === "0" || e.code === "Digit0") {
+      resetOffset();
+    }
+  });
+}
+
+setViewMode("compact");
     } else {
       setViewMode("lyrics");
     }
@@ -731,4 +936,29 @@ if (typeof window !== "undefined" && window.overlayApi) {
 }
 
 // Initial mode setup: start in clean compact mode (~160px)
+
+// Lyrics Sync Buttons & Keyboard Calibration ([ / ] / 0)
+if (btnSyncSub) {
+  btnSyncSub.addEventListener("click", () => adjustOffset(-0.5));
+}
+if (btnSyncAdd) {
+  btnSyncAdd.addEventListener("click", () => adjustOffset(0.5));
+}
+if (btnSyncReset) {
+  btnSyncReset.addEventListener("click", () => resetOffset());
+}
+
+if (isBrowser) {
+  window.addEventListener("keydown", (e) => {
+    if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) return;
+    if (e.key === "[" || e.code === "BracketLeft") {
+      adjustOffset(-0.5);
+    } else if (e.key === "]" || e.code === "BracketRight") {
+      adjustOffset(0.5);
+    } else if (e.key === "0" || e.code === "Digit0") {
+      resetOffset();
+    }
+  });
+}
+
 setViewMode("compact");
