@@ -1,4 +1,4 @@
-// Apple Music macOS MiniPlayer Overlay Controller (v1.3.10)
+// Apple Music macOS MiniPlayer Overlay Controller (v1.3.11)
 // Real-time 60fps interpolation, 1-in-1 lyrics synchronization, smooth centering scroll, click-to-seek
 
 const isBrowser = typeof window !== "undefined" && typeof document !== "undefined";
@@ -187,6 +187,18 @@ function parseLRC(lrcText, duration = 0) {
       }
     }
   }
+
+  if (items.length === 0) return [];
+
+  // Filter out meta headers like "[Текст песни ...]", contributors, translations
+  items = items.filter((x) => {
+    const txt = (x.text || "").trim().toLowerCase();
+    if (!txt) return false;
+    if (txt.startsWith("[текст песни") || txt.startsWith("[lyrics of")) return false;
+    if (txt.includes("contributors") || txt.includes("translations")) return false;
+    if (txt === "♫ текст этой песни недоступен." || txt === "текст этой песни недоступен.") return false;
+    return true;
+  });
 
   if (items.length === 0) return [];
 
@@ -419,21 +431,28 @@ function setViewMode(mode) {
 
 function handleLyricsData(lyricsData) {
   if (!lyricsData) return;
-  const src = lyricsData.lines || lyricsData.syncLyrics || lyricsData.lrc || lyricsData.lyrics;
-  if (src) {
+  const src = (Array.isArray(lyricsData.lines) && lyricsData.lines.length > 0)
+    ? lyricsData.lines
+    : (lyricsData.syncLyrics || lyricsData.lrc || lyricsData.lyrics);
+
+  if (src && (Array.isArray(src) ? src.length > 0 : String(src).trim().length > 0)) {
     const dur = trackDuration > 0 ? trackDuration : 0;
-    overlayLyrics = parseLRC(src, dur);
-    overlayLyricsIndex = -1;
-    lyricsTrackKey = currentTrackKey;
-    renderFullLyricsUI();
-    const pos = getInterpolatedPosition();
-    syncLyricsPosition(pos);
-  } else {
-    overlayLyrics = [];
-    overlayLyricsIndex = -1;
-    renderFullLyricsUI();
-    if (compactLine) compactLine.textContent = "♫ Текст отсутствует";
+    const parsed = parseLRC(src, dur);
+    if (parsed && parsed.length > 0) {
+      overlayLyrics = parsed;
+      overlayLyricsIndex = -1;
+      lyricsTrackKey = currentTrackKey;
+      renderFullLyricsUI();
+      const pos = getInterpolatedPosition();
+      syncLyricsPosition(pos);
+      return;
+    }
   }
+
+  overlayLyrics = [];
+  overlayLyricsIndex = -1;
+  renderFullLyricsUI();
+  if (compactLine) compactLine.textContent = "♫ Текст этой песни недоступен.";
 }
 
 function updateUI(state) {

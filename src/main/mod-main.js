@@ -814,7 +814,7 @@ function setupIpcHandlers() {
     }
   });
 
-  // Multi-Tier Cascading Lyrics Fetcher (Yandex Supplement -> LRCLib Direct -> LRCLib Search)
+  // Multi-Tier Cascading Lyrics Fetcher (Yandex Supplement -> LRCLib Direct -> Genius Search)
   ipcMain.handle("yandexMusicMod.fetchLyrics", async (_ev, trackTitle, trackArtist, trackId = null, oauthToken = null) => {
     if (!trackTitle && !trackId) return null;
     try {
@@ -827,11 +827,11 @@ function setupIpcHandlers() {
             url,
             {
               headers: {
-                "User-Agent": "YandexMusicMod/1.3.10 (Windows NT 10.0; Win64; x64)",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
                 "Accept": "application/json, text/plain, */*",
                 ...extraHeaders,
               },
-              timeout: 4000,
+              timeout: 2500,
             },
             (res) => {
               let data = "";
@@ -844,6 +844,38 @@ function setupIpcHandlers() {
                     resolve(null);
                   }
                 } catch (e) {
+                  resolve(null);
+                }
+              });
+            }
+          );
+          req.on("error", () => resolve(null));
+          req.on("timeout", () => {
+            req.destroy();
+            resolve(null);
+          });
+        });
+      };
+
+      const fetchText = (url, extraHeaders = {}) => {
+        return new Promise((resolve) => {
+          const req = https.get(
+            url,
+            {
+              headers: {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                ...extraHeaders,
+              },
+              timeout: 3500,
+            },
+            (res) => {
+              let data = "";
+              res.on("data", (chunk) => (data += chunk));
+              res.on("end", () => {
+                if (res.statusCode >= 200 && res.statusCode < 300) {
+                  resolve(data);
+                } else {
                   resolve(null);
                 }
               });
@@ -899,48 +931,83 @@ function setupIpcHandlers() {
         } catch (e) {}
       }
 
-      // 2. Tier 2: LRCLib Direct Match with modern browser headers (prefer syncedLyrics)
+      // 2. Tier 2: LRCLib Direct Match (with fast timeout in case of 502)
       if (cleanTitle) {
-        const query = new URLSearchParams({
-          track_name: cleanTitle,
-          artist_name: cleanArtist,
-        }).toString();
-        const direct = await fetchJson(`https://lrclib.net/api/get?${query}`);
-        if (direct && direct.syncedLyrics) {
-          return direct.syncedLyrics;
-        }
-        if (direct && direct.plainLyrics && !plainLyricsFallback) {
-          plainLyricsFallback = direct.plainLyrics;
-        }
-
-        // 3. Tier 3: LRCLib Cleaned Search Fallback (strip feat., remix, remaster)
-        const strippedTitle = cleanTitle
-          .replace(/\s*[\(\[][^\)\]]*(?:feat|ft|remix|edit|version|prod|remaster|soundtrack|live|official)[^\)\]]*[\)\]]/gi, "")
-          .trim();
-        const primaryArtist = cleanArtist.split(/[,&/]/)[0].trim();
-
-        if (strippedTitle !== cleanTitle || primaryArtist !== cleanArtist) {
-          const strippedQuery = new URLSearchParams({
-            track_name: strippedTitle,
-            artist_name: primaryArtist,
+        try {
+          const query = new URLSearchParams({
+            track_name: cleanTitle,
+            artist_name: cleanArtist,
           }).toString();
-          const directStripped = await fetchJson(`https://lrclib.net/api/get?${strippedQuery}`);
-          if (directStripped && directStripped.syncedLyrics) {
-            return directStripped.syncedLyrics;
+          const direct = await fetchJson(`https://lrclib.net/api/get?${query}`);
+          if (direct && direct.syncedLyrics) {
+            return direct.syncedLyrics;
           }
-          if (directStripped && directStripped.plainLyrics && !plainLyricsFallback) {
-            plainLyricsFallback = directStripped.plainLyrics;
+          if (direct && direct.plainLyrics && !plainLyricsFallback) {
+            plainLyricsFallback = direct.plainLyrics;
           }
-        }
+        } catch (_lrce) {}
+      }
 
-        const searchQuery = encodeURIComponent(`${strippedTitle} ${primaryArtist}`.trim());
-        const searchRes = await fetchJson(`https://lrclib.net/api/search?q=${searchQuery}`);
-        if (Array.isArray(searchRes) && searchRes.length > 0) {
-          const synced = searchRes.find((x) => x.syncedLyrics);
-          if (synced && synced.syncedLyrics) return synced.syncedLyrics;
-          const plain = searchRes.find((x) => x.plainLyrics);
-          if (plain && plain.plainLyrics && !plainLyricsFallback) plainLyricsFallback = plain.plainLyrics;
-        }
+      // 3. Tier 3: Genius API & Scraper Fallback (Covers virtually all Russian rap/pop tracks)
+      if (cleanTitle) {
+        try {
+          const q = encodeURIComponent(`${cleanArtist} ${cleanTitle}`.trim());
+          const geniusSearch = await fetchJson(`https://genius.com/api/search/multi?q=${q}`);
+          if (geniusSearch && geniusSearch.response && geniusSearch.response.sections) {
+            let songUrl = null;
+            for (const sec of geniusSearch.response.sections) {
+              if (sec.type === "song" && Array.isArray(sec.hits)) {
+                for (const hit of sec.hits) {
+                  if (hit.result && hit.result.url) {
+                    songUrl = hit.result.url;
+                    break;
+                  }
+                }
+              }
+              if (songUrl) break;
+            }
+
+            if (songUrl) {
+              const html = await fetchText(songUrl);
+              if (html) {
+                const parts = html.split('data-lyrics-container="true"');
+                if (parts.length > 1) {
+                  const blocks = [];
+                  for (let i = 1; i < parts.length; i++) {
+                    const p = parts[i];
+                    const endMarkers = [
+                      p.indexOf('class="RightSidebar'),
+                      p.indexOf('class="LyricsFooter'),
+                      p.indexOf('data-lyrics-container="true"'),
+                      p.indexOf('<form aria-label="Edit Lyrics Form"')
+                    ].filter((idx) => idx !== -1);
+                    const endIdx = endMarkers.length > 0 ? Math.min(...endMarkers) : p.length;
+                    let block = p.slice(0, endIdx);
+
+                    block = block.replace(/[\s\S]*?<\/h2><\/div><\/div><\/div>/, "");
+                    block = block.replace(/<div data-exclude-from-selection="true"[\s\S]*?<\/div>/g, "");
+                    block = block.replace(/<br\s*\/?>/gi, "\n");
+                    block = block.replace(/<[^>]+>/g, "");
+                    block = block
+                      .replace(/&amp;/g, "&")
+                      .replace(/&quot;/g, '"')
+                      .replace(/&#39;/g, "'")
+                      .replace(/&#x27;/g, "'")
+                      .replace(/&lt;/g, "<")
+                      .replace(/&gt;/g, ">");
+
+                    if (block.trim()) blocks.push(block.trim());
+                  }
+
+                  const geniusFull = blocks.join("\n").trim();
+                  if (geniusFull) {
+                    return geniusFull;
+                  }
+                }
+              }
+            }
+          }
+        } catch (_ge) {}
       }
 
       if (plainLyricsFallback) {
