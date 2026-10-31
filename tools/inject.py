@@ -381,51 +381,24 @@ try {
 
 
         # 10. Patch preload.js in root of staging
-
-        print("[+] Patching preload.js...")
-
+        print("[+] Patching preload.js at top of file...")
         preload_js_path = os.path.join(staging_dir, "preload.js")
-
         with open(preload_js_path, "r", encoding="utf-8") as f:
-
             preload_content = f.read()
 
-
-
         with open(os.path.join(SRC_DIR, "preload", "mod-preload.js"), "r", encoding="utf-8") as f:
-
             mod_preload_content = f.read()
 
-
-
+        # Remove existing mod injection if present
         if "// === Yandex Music Mod Preload Integration ===" in preload_content:
+            import re
+            preload_content = re.sub(r'// === Yandex Music Mod Preload Integration ===[\s\S]*?\n\}\)\(\);', '', preload_content).strip()
 
-            idx = preload_content.find("// === Yandex Music Mod Preload Integration ===")
-
-            preload_content = preload_content[:idx].rstrip() + "\n\n" + mod_preload_content
-
-            with open(preload_js_path, "w", encoding="utf-8") as f:
-
-                f.write(preload_content)
-
-            print("[+] preload.js updated with latest mod contextBridge.")
-
-        elif "yandexMusicMod" not in preload_content:
-
-            preload_content += "\n\n" + mod_preload_content
-
-            with open(preload_js_path, "w", encoding="utf-8") as f:
-
-                f.write(preload_content)
-
-            print("[+] preload.js patched with contextBridge exposure.")
-
-        else:
-
-            print("[i] preload.js already has mod contextBridge.")
-
-
-
+        # Prepend mod preload at the very top of preload.js
+        preload_content = mod_preload_content + "\n\n" + preload_content
+        with open(preload_js_path, "w", encoding="utf-8") as f:
+            f.write(preload_content)
+        print("[+] preload.js successfully patched at top.\n")
         # 11. Patch application HTML files to include renderer script and css tag
 
         # IMPORTANT: Exclude yandexMusicMod folder so HUD overlay & karaoke windows are not contaminated!

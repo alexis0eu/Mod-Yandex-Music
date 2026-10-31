@@ -3,6 +3,48 @@
   try {
     const electron = require("electron");
 
+    // 0. Audio element capture (runs before React / Next.js chunks load)
+    try {
+      if (typeof window !== "undefined") {
+        window.__ymAudioHookInstalled = true;
+        window.__ymActiveAudio = null;
+        window.__ymKnownAudios = new Set();
+
+        const origPlay = HTMLMediaElement.prototype.play;
+        HTMLMediaElement.prototype.play = function() {
+          window.__ymActiveAudio = this;
+          window.__ymKnownAudios.add(this);
+          return origPlay.apply(this, arguments);
+        };
+
+        const origPause = HTMLMediaElement.prototype.pause;
+        HTMLMediaElement.prototype.pause = function() {
+          window.__ymKnownAudios.add(this);
+          return origPause.apply(this, arguments);
+        };
+
+        const origLoad = HTMLMediaElement.prototype.load;
+        HTMLMediaElement.prototype.load = function() {
+          window.__ymKnownAudios.add(this);
+          return origLoad.apply(this, arguments);
+        };
+
+        window.__ymGetActiveAudio = function() {
+          if (window.__ymActiveAudio && !window.__ymActiveAudio.error) {
+            return window.__ymActiveAudio;
+          }
+          if (window.__ymKnownAudios && window.__ymKnownAudios.size > 0) {
+            for (const a of window.__ymKnownAudios) {
+              if (a && !a.paused) return a;
+            }
+            return Array.from(window.__ymKnownAudios)[0];
+          }
+          return null;
+        };
+      }
+    } catch (_ae) {}
+
+
     // 1. Intercept & neutralize official Yandex Music app update listeners and install commands
     try {
       const originalOn = electron.ipcRenderer.on.bind(electron.ipcRenderer);

@@ -1,4 +1,4 @@
-// Apple Music macOS MiniPlayer Overlay Controller (v1.3.8)
+// Apple Music macOS MiniPlayer Overlay Controller (v1.3.9)
 // Real-time 60fps interpolation, 1-in-1 lyrics synchronization, smooth centering scroll, click-to-seek
 
 const isBrowser = typeof window !== "undefined" && typeof document !== "undefined";
@@ -7,7 +7,7 @@ let currentTrack = null;
 let currentTrackKey = "";
 let isPlaying = false;
 let isGhostMode = false;
-let currentViewMode = "lyrics"; // "compact" | "lyrics" | "artwork"
+let currentViewMode = "compact"; // "compact" | "lyrics" | "artwork"
 
 let overlayLyrics = [];
 let overlayLyricsIndex = -1;
@@ -22,7 +22,6 @@ let animFrameId = null;
 
 // DOM Elements
 const playerCard = isBrowser ? document.getElementById("am-player-card") : null;
-const ambientGlow = isBrowser ? document.getElementById("am-ambient-glow") : null;
 const amCover = isBrowser ? document.getElementById("am-cover") : null;
 const amLargeArt = isBrowser ? document.getElementById("am-large-art") : null;
 const coverWrap = isBrowser ? document.getElementById("am-cover-wrap") : null;
@@ -352,7 +351,7 @@ function setViewMode(mode) {
     if (compactKaraoke) compactKaraoke.classList.remove("hidden");
     if (btnLyricsToggle) btnLyricsToggle.classList.remove("active");
     if (window.overlayApi && window.overlayApi.resizeOverlay) {
-      window.overlayApi.resizeOverlay(380, 175);
+      window.overlayApi.resizeOverlay(380, 160);
     }
   } else if (mode === "lyrics") {
     if (compactKaraoke) compactKaraoke.classList.add("hidden");
@@ -360,7 +359,7 @@ function setViewMode(mode) {
     if (expandedLyrics) expandedLyrics.classList.remove("hidden");
     if (btnLyricsToggle) btnLyricsToggle.classList.add("active");
     if (window.overlayApi && window.overlayApi.resizeOverlay) {
-      window.overlayApi.resizeOverlay(380, 490);
+      window.overlayApi.resizeOverlay(380, 480);
     }
     renderFullLyricsUI();
   } else if (mode === "artwork") {
@@ -451,7 +450,6 @@ function updateUI(state) {
     if (coverUrl) {
       if (amCover && amCover.src !== coverUrl) amCover.src = coverUrl;
       if (amLargeArt && amLargeArt.src !== coverUrl) amLargeArt.src = coverUrl;
-      if (ambientGlow) ambientGlow.style.backgroundImage = `url("${coverUrl}")`;
     }
 
     if (btnLike) {
@@ -658,5 +656,5 @@ if (typeof window !== "undefined" && window.overlayApi) {
   }
 }
 
-// Initial mode setup
-setViewMode("lyrics");
+// Initial mode setup: start in clean compact mode (~160px)
+setViewMode("compact");

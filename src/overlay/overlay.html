@@ -7,9 +7,6 @@
 </head>
 <body class="am-body">
   <div class="am-player-card" id="am-player-card">
-    <!-- Ambient artwork glow layer behind the card -->
-    <div class="am-ambient-glow" id="am-ambient-glow"></div>
-
     <!-- MiniPlayer Header / Top Bar (Draggable) -->
     <div class="am-header" id="am-header">
       <!-- Left: Album Artwork -->
@@ -77,14 +74,14 @@
       <div class="am-compact-line" id="am-compact-line">♫ Синхронизация текста...</div>
     </div>
 
-    <!-- Scrolling Lyrics Area (Expanded Apple Music Mode - matches media_1793263294398_ba08c3d2.png) -->
+    <!-- Scrolling Lyrics Area (Expanded Apple Music Mode - matches reference) -->
     <div class="am-expanded-lyrics no-drag hidden" id="am-expanded-lyrics">
       <div class="am-lyrics-scroll" id="am-lyrics-scroll">
         <div class="am-lyrics-empty" id="am-lyrics-empty">Текст этой песни недоступен.</div>
       </div>
     </div>
 
-    <!-- Large Artwork View (Artwork Mode - matches media_1793263301037_164cfb65.png) -->
+    <!-- Large Artwork View (Artwork Mode) -->
     <div class="am-artwork-view no-drag hidden" id="am-artwork-view">
       <img id="am-large-art" class="am-large-art" src="" alt="Album Art" />
     </div>
@@ -129,7 +126,7 @@
 
       <!-- Right: Lyrics Toggle, Karaoke Capsule Launcher, Queue -->
       <div class="am-ctrl-group am-ctrl-right">
-        <button class="am-btn am-btn-lyrics active" id="btn-lyrics-toggle" title="Текст песни (Apple Music View)">
+        <button class="am-btn am-btn-lyrics" id="btn-lyrics-toggle" title="Текст песни (Apple Music View)">
           <svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor">
             <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-6 10H7v-2h7v2zm3-4H7V6h10v2z"/>
           </svg>

@@ -1,7 +1,7 @@
-/* Apple Music macOS MiniPlayer Overlay Stylesheet (v1.3.8) */
+/* Apple Music macOS MiniPlayer Overlay Stylesheet (v1.3.9) */
 :root {
-  --am-bg: rgba(28, 28, 30, 0.92);
-  --am-border: rgba(255, 255, 255, 0.1);
+  --am-bg: rgba(28, 28, 30, 0.96);
+  --am-border: rgba(255, 255, 255, 0.08);
   --am-text-primary: #ffffff;
   --am-text-secondary: rgba(255, 255, 255, 0.64);
   --am-text-tertiary: rgba(255, 255, 255, 0.45);
@@ -15,6 +15,14 @@
   user-select: none;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", "Segoe UI", Roboto, sans-serif !important;
   -webkit-font-smoothing: antialiased;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+*::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 body.am-body {
@@ -25,42 +33,29 @@ body.am-body {
   display: flex;
   align-items: flex-start;
   justify-content: flex-start;
-  padding: 6px;
+  padding: 0 !important;
 }
 
 .no-drag {
   -webkit-app-region: no-drag !important;
 }
 
-/* Main Container Card */
+/* Main Container Card (macOS Apple Music MiniPlayer Frosted Acrylic) */
 .am-player-card {
   position: relative;
   width: 100%;
   height: 100%;
   max-width: 380px;
-  background: var(--am-bg);
-  backdrop-filter: blur(48px) saturate(210%);
-  -webkit-backdrop-filter: blur(48px) saturate(210%);
-  border: 1px solid var(--am-border);
-  border-radius: 16px;
-  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  background: var(--am-bg) !important;
+  backdrop-filter: blur(40px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(180%) !important;
+  border: 1px solid var(--am-border) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* Ambient Artwork Glow */
-.am-ambient-glow {
-  position: absolute;
-  inset: -40px;
-  background-size: cover;
-  background-position: center;
-  filter: blur(60px) brightness(0.4) saturate(200%);
-  opacity: 0.65;
-  pointer-events: none;
-  z-index: 0;
-  transition: background-image 0.6s ease, opacity 0.5s ease;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Header Bar (Draggable) */
@@ -213,7 +208,7 @@ body.am-body {
   display: flex;
   align-items: center;
   gap: 9px;
-  padding: 6px 16px 2px 16px;
+  padding: 4px 16px 2px 16px;
 }
 
 .am-time {
@@ -276,7 +271,7 @@ body.am-body {
   position: relative;
   z-index: 2;
   padding: 2px 16px 4px 16px;
-  min-height: 22px;
+  min-height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -303,7 +298,7 @@ body.am-body {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  padding: 8px 16px 8px 16px;
+  padding: 4px 16px 4px 16px;
 }
 
 .am-lyrics-scroll {
@@ -315,9 +310,9 @@ body.am-body {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 28px 4px 40px 4px;
-  mask-image: linear-gradient(to bottom, transparent 0%, black 14%, black 86%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 14%, black 86%, transparent 100%);
+  padding: 24px 6px 36px 6px;
+  mask-image: linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%);
 }
 
 .am-lyrics-scroll::-webkit-scrollbar {
@@ -327,28 +322,31 @@ body.am-body {
 }
 
 .am-lrc-line {
-  font-size: 20px;
-  font-weight: 700;
+  font-size: 19px;
+  font-weight: 600;
   line-height: 1.35;
-  color: rgba(255, 255, 255, 0.32);
+  color: rgba(255, 255, 255, 0.35);
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 8px;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   letter-spacing: -0.2px;
+  filter: blur(0.2px);
 }
 
 .am-lrc-line:hover {
   color: rgba(255, 255, 255, 0.75);
   background: rgba(255, 255, 255, 0.05);
+  filter: none;
 }
 
 .am-lrc-line.active {
   color: #ffffff !important;
-  font-size: 22.5px !important;
-  font-weight: 800 !important;
+  font-size: 22px !important;
+  font-weight: 700 !important;
   opacity: 1 !important;
-  text-shadow: 0 0 18px rgba(255, 255, 255, 0.45), 0 2px 8px rgba(0, 0, 0, 0.6) !important;
+  filter: none !important;
+  text-shadow: 0 0 16px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.6) !important;
   transform: scale(1.02);
   transform-origin: left center;
 }
@@ -357,9 +355,9 @@ body.am-body {
   margin: auto;
   text-align: center;
   color: var(--am-text-tertiary);
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
-  padding: 50px 20px;
+  padding: 40px 20px;
 }
 
 /* Large Artwork Mode */
@@ -427,9 +425,13 @@ body.am-body {
   transform: scale(1.15);
 }
 
+.am-btn-like svg {
+  transition: all 0.2s ease;
+}
+
 .am-btn-like.liked svg {
-  fill: var(--am-accent);
-  stroke: var(--am-accent);
+  fill: var(--am-accent) !important;
+  stroke: var(--am-accent) !important;
 }
 
 .am-btn-lyrics.active {

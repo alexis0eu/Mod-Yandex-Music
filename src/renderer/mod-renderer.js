@@ -1,7 +1,7 @@
 (function () {
 
 // ==========================================
-// 0. AUDIO ELEMENT CAPTURE (v1.3.8)
+// 0. AUDIO ELEMENT CAPTURE (v1.3.9)
 // Intercepts detached <audio> elements created by Yandex Music Yasp player
 // ==========================================
 (function setupAudioCapture() {
@@ -1888,7 +1888,7 @@
 
     renderLyricsBodyUI();
 
-    // Broadcast to Karaoke window and Overlay (v1.3.8: include parsed lines, trackId, and cover)
+    // Broadcast to Karaoke window and Overlay (v1.3.9: include parsed lines, trackId, and cover)
     if (window.yandexMusicMod && window.yandexMusicMod.updateLyrics) {
       window.yandexMusicMod.updateLyrics({
         track: cleanTitle,
@@ -2399,7 +2399,7 @@
   // ==========================================
   // v1.3.2: AUTO-UPDATER & COMMUNITY STATS
   // ==========================================
-  const CURRENT_MOD_VERSION = "v1.3.8";
+  const CURRENT_MOD_VERSION = "v1.3.9";
 
   async function checkModUpdates() {
     try {
@@ -2844,7 +2844,7 @@
       div, span, p, a, h1, h2, h3, h4, h5, h6 {
         ${fontRule}
       }
-      /* Prevent modal and lyrics distortion from global font scaling (v1.3.8) */
+      /* Prevent modal and lyrics distortion from global font scaling (v1.3.9) */
       #ym-mod-settings-modal, #ym-proposal-modal, #ym-mod-fullscreen-lyrics, .ym-mod-modal {
         font-size: ${Math.round(14 * modalSizeScale)}px !important;
       }
@@ -3121,26 +3121,27 @@
 
     try {
 
-      // 1. Direct search from root fiber for entityMeta
-
+      // 1. Direct search from root fiber for entityMeta or track
       const entityMetaProps = searchFiberProperty(element, "entityMeta");
-
       if (entityMetaProps && entityMetaProps.entityMeta) {
-
         const timecodeProps = searchFiberProperty(element, "timecodeClassName") || searchFiberProperty(element, "currentTimecodeClassName");
-
         return {
-
           entityMeta: entityMetaProps.entityMeta,
-
           isPlaying: entityMetaProps.isPlaying,
-
           position: timecodeProps && timecodeProps.position !== undefined ? timecodeProps.position : entityMetaProps.position,
-
           duration: timecodeProps && timecodeProps.duration !== undefined ? timecodeProps.duration : entityMetaProps.duration
-
         };
+      }
 
+      const trackProps = searchFiberProperty(element, "track");
+      if (trackProps && trackProps.track && (trackProps.track.title || trackProps.track.id)) {
+        const timecodeProps = searchFiberProperty(element, "timecodeClassName") || searchFiberProperty(element, "currentTimecodeClassName");
+        return {
+          entityMeta: trackProps.track,
+          isPlaying: trackProps.isPlaying !== undefined ? trackProps.isPlaying : trackProps.playing,
+          position: timecodeProps && timecodeProps.position !== undefined ? timecodeProps.position : trackProps.position,
+          duration: timecodeProps && timecodeProps.duration !== undefined ? timecodeProps.duration : trackProps.duration
+        };
       }
 
 
@@ -3182,19 +3183,20 @@
           }
 
           if (curr.memoizedProps.entityMeta && (curr.memoizedProps.entityMeta.title || curr.memoizedProps.entityMeta.id)) {
-
             return {
-
               entityMeta: curr.memoizedProps.entityMeta,
-
               isPlaying: curr.memoizedProps.isPlaying,
-
               position: curr.memoizedProps.position,
-
               duration: curr.memoizedProps.duration
-
             };
-
+          }
+          if (curr.memoizedProps.track && (curr.memoizedProps.track.title || curr.memoizedProps.track.id)) {
+            return {
+              entityMeta: curr.memoizedProps.track,
+              isPlaying: curr.memoizedProps.isPlaying !== undefined ? curr.memoizedProps.isPlaying : curr.memoizedProps.playing,
+              position: curr.memoizedProps.position,
+              duration: curr.memoizedProps.duration
+            };
           }
 
           if (curr.memoizedProps.track && (curr.memoizedProps.track.title || curr.memoizedProps.track.id)) {
@@ -3365,7 +3367,7 @@
 
             <div class="ym-modal-title">Настройки Мода</div>
 
-            <div class="ym-modal-version">v1.3.8 (YM 5.124.1)</div>
+            <div class="ym-modal-version">v1.3.9 (YM 5.124.1)</div>
 
           </div>
 
@@ -5615,7 +5617,7 @@
 
           <span class="ym-mod-btn-text">Настройки Мода</span>
 
-          <span class="ym-mod-ver-tag">v1.3.8</span>
+          <span class="ym-mod-ver-tag">v1.3.9</span>
 
         `;
 
@@ -5879,27 +5881,22 @@
 
 
     // 2. Audio Elements (Precise position, duration, and playing state)
-
-    const audios = Array.from(document.querySelectorAll("audio"));
-
-    const activeAudio = audios.find((a) => !a.paused) || audios[0];
-
+    let activeAudio = null;
+    if (typeof window.__ymGetActiveAudio === "function") {
+      activeAudio = window.__ymGetActiveAudio();
+    }
+    if (!activeAudio) {
+      const audios = Array.from(document.querySelectorAll("audio"));
+      activeAudio = audios.find((a) => !a.paused) || audios[0];
+    }
     if (activeAudio) {
-
       if (!isPlaying) isPlaying = !activeAudio.paused;
-
       if (activeAudio.currentTime !== undefined && !isNaN(activeAudio.currentTime)) {
-
-        position = Math.floor(activeAudio.currentTime);
-
+        position = activeAudio.currentTime; // sub-second float precision for 60fps lyrics
       }
-
       if (activeAudio.duration && !isNaN(activeAudio.duration) && activeAudio.duration > 0) {
-
-        duration = Math.floor(activeAudio.duration);
-
+        duration = activeAudio.duration;
       }
-
     }
 
 
@@ -6175,12 +6172,12 @@
 
     // 8. Like status
 
-    const likeBtn = document.querySelector('button[data-test-id="LIKE_BUTTON"], button[aria-label*="Нравится"], button[aria-label*="like"]');
-
+    const likeBtn = document.querySelector('button[data-test-id="LIKE_BUTTON"], [data-test-id="PLAYERBAR_DESKTOP"] button[data-test-id*="LIKE"], [data-test-id="FULLSCREEN_PLAYER_MODAL"] button[data-test-id*="LIKE"], button[aria-label*="Нравится"], button[aria-label*="like" i]');
     if (likeBtn) {
-
-      liked = likeBtn.getAttribute("aria-pressed") === "true" || likeBtn.classList.contains("liked");
-
+      liked = likeBtn.className.includes("likeButton_active") ||
+              likeBtn.classList.contains("liked") ||
+              likeBtn.getAttribute("aria-checked") === "true" ||
+              likeBtn.getAttribute("data-is-liked") === "true";
     }
 
 
@@ -6292,75 +6289,67 @@
 
 
   function handlePlayerAction(action, payload) {
-
     if (action === "requestState") {
-
       const state = scrapeCurrentPlayerState();
-
       if (state && window.yandexMusicMod && window.yandexMusicMod.updatePlayerState) {
-
         window.yandexMusicMod.updatePlayerState(state);
-
       }
-
       return;
-
     }
 
-
-
-    const playPauseBtn = document.querySelector('button[data-test-id="PLAY_BUTTON"], button[data-test-id="PAUSE_BUTTON"], [data-test-id="VIBE_PLAYERBAR"] button[data-test-id*="PLAY"], section[data-test-id="PLAYERBAR_DESKTOP"] button[data-test-id*="PLAY"]');
-
-    const nextBtn = document.querySelector('button[data-test-id="sonata.NEXT_TRACK_BUTTON"], button[data-test-id="NEXT_TRACK_BUTTON"], button[data-test-id="NEXT_BUTTON"], button[aria-label*="Следующий"], button[aria-label*="next"]');
-
-    const prevBtn = document.querySelector('button[data-test-id="sonata.PREVIOUS_TRACK_BUTTON"], button[data-test-id="PREVIOUS_TRACK_BUTTON"], button[data-test-id="PREV_BUTTON"], button[aria-label*="Предыдущий"], button[aria-label*="prev"]');
-
-    const likeBtn = document.querySelector('button[data-test-id="LIKE_BUTTON"], button[aria-label*="Нравится"], button[aria-label*="like"]');
-
-
+    const activeAudio = typeof window.__ymGetActiveAudio === "function" ? window.__ymGetActiveAudio() : null;
 
     if (action === "playPause") {
-
+      const playPauseBtn = document.querySelector(
+        'button[data-test-id="MY_VIBE_PLAY_BUTTON"], button[data-test-id="MY_VIBE_PAUSE_BUTTON"], button[data-test-id="PLAY_BUTTON"], button[data-test-id="PAUSE_BUTTON"], [data-test-id="PLAYERBAR_DESKTOP"] button[data-test-id*="PLAY"], [data-test-id="PLAYERBAR_DESKTOP"] button[data-test-id*="PAUSE"], [data-test-id="FULLSCREEN_PLAYER_MODAL"] button[data-test-id*="PLAY"], [data-test-id="FULLSCREEN_PLAYER_MODAL"] button[data-test-id*="PAUSE"]'
+      );
       if (playPauseBtn) {
-
         playPauseBtn.click();
-
+      } else if (activeAudio) {
+        activeAudio.paused ? activeAudio.play() : activeAudio.pause();
       } else {
-
         const audios = document.querySelectorAll("audio");
-
-        for (const a of audios) {
-
-          a.paused ? a.play() : a.pause();
-
-        }
-
+        for (const a of audios) a.paused ? a.play() : a.pause();
+        window.dispatchEvent(new KeyboardEvent("keydown", { key: " ", code: "Space", keyCode: 32, which: 32, bubbles: true }));
       }
-
     } else if (action === "next") {
-
-      if (nextBtn) nextBtn.click();
-
-    } else if (action === "prev") {
-
-      if (prevBtn) prevBtn.click();
-
-    } else if (action === "like") {
-
-      if (likeBtn) likeBtn.click();
-
-    } else if (action === "seek" && payload && payload.position !== undefined) {
-
-      const audios = document.querySelectorAll("audio");
-
-      for (const a of audios) {
-
-        a.currentTime = payload.position;
-
+      const nextBtn = document.querySelector(
+        'button[data-test-id="NEXT_TRACK_BUTTON"], button[data-test-id="sonata.NEXT_TRACK_BUTTON"], button[data-test-id="NEXT_BUTTON"], button[aria-label*="Следующий"], button[aria-label*="next" i]'
+      );
+      if (nextBtn) {
+        nextBtn.click();
+      } else {
+        window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", code: "ArrowRight", ctrlKey: true, bubbles: true }));
       }
-
+    } else if (action === "prev") {
+      const prevBtn = document.querySelector(
+        'button[data-test-id="PREVIOUS_TRACK_BUTTON"], button[data-test-id="sonata.PREVIOUS_TRACK_BUTTON"], button[data-test-id="PREV_BUTTON"], button[aria-label*="Предыдущий"], button[aria-label*="prev" i]'
+      );
+      if (prevBtn) {
+        prevBtn.click();
+      } else {
+        window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft", code: "ArrowLeft", ctrlKey: true, bubbles: true }));
+      }
+    } else if (action === "like") {
+      const likeBtn = document.querySelector(
+        'button[data-test-id="LIKE_BUTTON"], [data-test-id="PLAYERBAR_DESKTOP"] button[data-test-id*="LIKE"], [data-test-id="FULLSCREEN_PLAYER_MODAL"] button[data-test-id*="LIKE"], button[aria-label*="Нравится"], button[aria-label*="like" i]'
+      );
+      if (likeBtn) likeBtn.click();
+    } else if (action === "toggleMute") {
+      const volBtn = document.querySelector('button[data-test-id*="VOLUME"], [data-test-id="VOLUME_BUTTON"]');
+      if (volBtn) {
+        volBtn.click();
+      } else if (activeAudio) {
+        activeAudio.muted = !activeAudio.muted;
+      }
+    } else if (action === "seek" && payload && payload.position !== undefined) {
+      if (activeAudio) {
+        activeAudio.currentTime = payload.position;
+      } else {
+        const audios = document.querySelectorAll("audio");
+        for (const a of audios) a.currentTime = payload.position;
+      }
     }
-
   }
 
 

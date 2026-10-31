@@ -337,7 +337,7 @@ function getOrCreateOverlayWindow() {
   const primaryDisplay = screen.getPrimaryDisplay();
   const { width } = primaryDisplay.workAreaSize;
   const overlayWidth = 380;
-  const overlayHeight = 175;
+  const overlayHeight = 160;
   const posX = width - overlayWidth - 30;
   const posY = 40;
 
@@ -827,7 +827,7 @@ function setupIpcHandlers() {
             url,
             {
               headers: {
-                "User-Agent": "YandexMusicMod/1.3.8 (Windows NT 10.0; Win64; x64)",
+                "User-Agent": "YandexMusicMod/1.3.9 (Windows NT 10.0; Win64; x64)",
                 "Accept": "application/json, text/plain, */*",
                 ...extraHeaders,
               },
@@ -858,6 +858,16 @@ function setupIpcHandlers() {
       };
 
       let plainLyricsFallback = null;
+
+      // 0. Auto-resolve Yandex trackId if missing
+      if ((!trackId || !String(trackId).match(/^\d+$/)) && cleanTitle) {
+        try {
+          const searchData = await fetchJson(`https://api.music.yandex.net/search?text=${encodeURIComponent(cleanTitle + " " + cleanArtist)}&type=track&page=0`);
+          if (searchData && searchData.result && searchData.result.tracks && searchData.result.tracks.results && searchData.result.tracks.results.length > 0) {
+            trackId = String(searchData.result.tracks.results[0].id);
+          }
+        } catch (_se) {}
+      }
 
       // 1. Tier 1: Official Yandex Music Track Supplement (Zero-latency native synced lyrics)
       if (trackId && String(trackId).match(/^\d+$/)) {

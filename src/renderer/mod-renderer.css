@@ -2031,3 +2031,30 @@ div[class*="AppUpdate"],
   max-height: 0 !important;
   overflow: hidden !important;
 }
+
+
+/* === v1.3.9 BULLETPROOF UPDATE NOTIFICATION SUPPRESSION === */
+div[class*="NotificationUpdate_root"],
+div[class*="NotificationUpdate_important"],
+div[class*="NotificationUpdate_message"],
+div[class*="NotificationUpdate_text"],
+div[class*="NotificationUpdate_button"],
+div[class*="NotificationUpdate"],
+div[class*="UpdateNotification"],
+div[class*="AppUpdate"],
+button[data-test-id*="APP_UPDATE_NOTIFICATION_BUTTON"],
+button[data-test-id*="appUpdate"],
+[data-test-id="APP_UPDATE_NOTIFICATION_BUTTON"] {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  width: 0 !important;
+  max-height: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  position: absolute !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+}
