@@ -1,4 +1,4 @@
-﻿!include "MUI2.nsh"
+!include "MUI2.nsh"
 !include "FileFunc.nsh"
 
 Unicode True
@@ -15,7 +15,7 @@ VIProductVersion "5.124.1.0"
 VIAddVersionKey "ProductName" "Яндекс Музыка Mod"
 VIAddVersionKey "CompanyName" "alexis0eu"
 VIAddVersionKey "LegalCopyright" "alexis0eu"
-VIAddVersionKey "FileDescription" "Яндекс Музыка Mod v1.3.5"
+VIAddVersionKey "FileDescription" "Яндекс Музыка Mod v1.3.7"
 VIAddVersionKey "FileVersion" "5.124.1.0"
 
 !define MUI_ICON "..\assets\icon.ico"

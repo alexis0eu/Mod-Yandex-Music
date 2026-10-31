@@ -16,10 +16,10 @@
       <div class="header-right no-drag">
         <button id="btn-ghost" class="hud-btn" title="Включить/выключить сквозной клик (Ghost mode)">
           <span class="btn-icon">👻</span>
-          <span class="btn-text" id="ghost-label">Кликабельный</span>
+          <span class="btn-text" id="ghost-label">Клик</span>
         </button>
-        <button id="btn-lyrics-toggle" class="hud-btn active" title="Показать/скрыть текст песни в оверлее">
-          <span class="btn-icon">📜</span>
+        <button id="btn-lyrics-toggle" class="hud-btn active" title="Развернуть/свернуть текст песни (Apple Music View)">
+          <span class="btn-icon">💬</span>
         </button>
         <button id="btn-karaoke" class="hud-btn" title="Открыть плавающее караоке (Ctrl+Shift+L)">
           <span class="btn-icon">🎤</span>
@@ -46,6 +46,14 @@
         <div class="meta-container">
           <div class="track-title" id="track-title">Трек не воспроизводится</div>
           <div class="track-artist" id="track-artist">Откройте Яндекс Музыку</div>
+          <div class="hud-badge-row">
+            <div class="hud-badge-lossless">
+              <svg width="12" height="9" viewBox="0 0 14 10" fill="none" stroke="currentColor" stroke-width="1.4">
+                <path d="M1 5c1-3 2-3 3 0s2 3 3 0 2-3 3 0 2 3 3 0"/>
+              </svg>
+              <span>Lossless</span>
+            </div>
+          </div>
         </div>
 
         <!-- Progress Bar -->
@@ -55,47 +63,56 @@
             <div class="progress-bar-fill" id="progress-bar-fill"></div>
             <div class="progress-bar-thumb" id="progress-bar-thumb"></div>
           </div>
-          <span class="time-label" id="time-total">0:00</span>
+          <span class="time-label" id="time-total">-0:00</span>
         </div>
 
         <!-- Controls Row -->
         <div class="controls-row no-drag">
           <button class="ctrl-btn" id="btn-prev" title="Предыдущий трек">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
               <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
             </svg>
           </button>
           
           <button class="ctrl-btn btn-play" id="btn-play" title="Воспроизведение / Пауза">
-            <svg id="icon-play" viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+            <svg id="icon-play" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
               <path d="M8 5v14l11-7z"/>
             </svg>
-            <svg id="icon-pause" class="hidden" viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+            <svg id="icon-pause" class="hidden" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
               <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
             </svg>
           </button>
 
           <button class="ctrl-btn" id="btn-next" title="Следующий трек">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
               <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
             </svg>
           </button>
 
           <button class="ctrl-btn btn-like" id="btn-like" title="Нравится">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
             </svg>
           </button>
 
-          <div class="shortcut-hint" title="Быстрые клавиши: Ctrl+Shift+O (Оверлей) / Ctrl+Shift+L (Караоке)">
+          <div class="shortcut-hint" title="Быстрые клавиши: Ctrl+Shift+O (HUD) / Ctrl+Shift+L (Караоке)">
             🎮 Ctrl+Shift+O
           </div>
         </div>
+      </div>
+    </div>
 
-        <!-- Synchronized Karaoke Lyrics Bar in Overlay -->
-        <div class="overlay-lyrics-container" id="overlay-lyrics-container">
-          <div class="overlay-lyrics-line" id="overlay-lyrics-active">♫ Текст песни синхронизируется...</div>
-        </div>
+    <!-- 1-in-1 Synchronized Karaoke Rolling Strip (Compact Mode) -->
+    <div class="overlay-lyrics-container" id="overlay-lyrics-container">
+      <div class="overlay-lyric-prev" id="overlay-lyric-prev"></div>
+      <div class="overlay-lyric-active" id="overlay-lyrics-active">♫ Текст песни синхронизируется...</div>
+      <div class="overlay-lyric-next" id="overlay-lyric-next"></div>
+    </div>
+
+    <!-- Apple Music Full Lyrics View (Expanded Mode) -->
+    <div class="overlay-full-lyrics hidden" id="overlay-full-lyrics">
+      <div class="full-lyrics-scroll" id="full-lyrics-scroll">
+        <div class="full-lyrics-empty" id="full-lyrics-empty">Текст этой песни недоступен.</div>
       </div>
     </div>
   </div>

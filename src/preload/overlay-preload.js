@@ -34,6 +34,9 @@ contextBridge.exposeInMainWorld("overlayApi", {
   toggleKaraoke: () => {
     ipcRenderer.send("yandexMusicMod.toggleKaraoke");
   },
+  resizeOverlay: (width, height) => {
+    ipcRenderer.send("yandexMusicMod.resizeOverlay", width, height);
+  },
   getPlayerState: () => ipcRenderer.invoke("yandexMusicMod.getLastPlayerState"),
   getLyrics: () => ipcRenderer.invoke("yandexMusicMod.getLastLyrics"),
   getLastPlayerState: () => ipcRenderer.invoke("yandexMusicMod.getLastPlayerState"),

@@ -257,16 +257,35 @@
     if (modSettings && modSettings["system/blockAppUpdates"] === false) return;
     const bannerSelectors = [
       'div[class*="NotificationUpdate"]',
+      'div[class*="WithTopBanner_banner"]',
+      'div[class*="UpdateNotification"]',
+      'div[class*="AppUpdate"]',
       'button[data-test-id*="APP_UPDATE"]',
-      '[data-test-id="APP_UPDATE_NOTIFICATION_BUTTON"]'
+      '[data-test-id="APP_UPDATE_NOTIFICATION_BUTTON"]',
+      '[data-test-id*="UPDATE_NOTIFICATION"]'
     ];
     for (const sel of bannerSelectors) {
       const els = document.querySelectorAll(sel);
       for (const el of els) {
         try {
-          const root = el.closest('div[class*="NotificationUpdate_root"]') || el;
+          const root = el.closest('div[class*="NotificationUpdate_root"]') || el.closest('div[class*="WithTopBanner_banner"]') || el;
           root.remove();
-        } catch (e) {}
+        } catch (e) {
+          el.style.display = "none";
+        }
+      }
+    }
+
+    const allButtons = document.querySelectorAll('header button, div[class*="Top"] button, div[class*="Banner"] button, div[class*="Header"] button');
+    for (const btn of allButtons) {
+      const txt = (btn.textContent || "").trim().toUpperCase();
+      if (txt === "ОБНОВИТЬ" || txt.includes("ДОСТУПНА ВЕРСИЯ")) {
+        const parent = btn.closest('div[class*="Banner"], div[class*="Notification"], div[class*="banner"]') || btn.parentElement;
+        if (parent) {
+          try { parent.remove(); } catch (e) { parent.style.display = "none"; }
+        } else {
+          try { btn.remove(); } catch (e) { btn.style.display = "none"; }
+        }
       }
     }
   }
@@ -1731,8 +1750,49 @@
     let lrc = null;
 
     try {
-      if (window.yandexMusicMod && window.yandexMusicMod.fetchLyrics) {
-        lrc = await window.yandexMusicMod.fetchLyrics(cleanTitle, cleanArtist, trackId);
+      let oauthToken = "";
+      try {
+        const rawOauth = window.localStorage.getItem("oauth");
+        if (rawOauth) {
+          const parsed = JSON.parse(rawOauth);
+          if (parsed && parsed.value) oauthToken = "OAuth " + parsed.value;
+        }
+      } catch (e) {}
+
+      // 1. Direct renderer fetch from Yandex Music API if trackId exists and user has token
+      if (trackId && String(trackId).match(/^\d+$/) && oauthToken) {
+        try {
+          const resp = await fetch(`https://api.music.yandex.net/tracks/${trackId}/supplement`, {
+            headers: {
+              Authorization: oauthToken,
+              "X-Yandex-Music-Client": "YandexMusicDesktopAppWindows/5.124.1",
+              "X-Yandex-Music-Frontend": "new",
+            },
+          });
+          if (resp.ok) {
+            const data = await resp.json();
+            const res = data.result || data;
+            if (res && res.lyrics) {
+              if (Array.isArray(res.lyrics.syncLyrics) && res.lyrics.syncLyrics.length > 0) {
+                const lrcLines = res.lyrics.syncLyrics.map((item) => {
+                  const totalSec = (item.timestamp || item.offset || 0) / 1000;
+                  const m = Math.floor(totalSec / 60);
+                  const s = Math.floor(totalSec % 60);
+                  const cs = Math.floor((totalSec % 1) * 100);
+                  return `[${m < 10 ? "0" : ""}${m}:${s < 10 ? "0" : ""}${s}.${cs < 10 ? "0" : ""}${cs}] ${item.line || item.text || ""}`;
+                });
+                lrc = lrcLines.join("\n");
+              } else if (res.lyrics.fullLyrics) {
+                lrc = res.lyrics.fullLyrics;
+              }
+            }
+          }
+        } catch (e) {}
+      }
+
+      // 2. Fallback to main process fetchLyrics
+      if (!lrc && window.yandexMusicMod && window.yandexMusicMod.fetchLyrics) {
+        lrc = await window.yandexMusicMod.fetchLyrics(cleanTitle, cleanArtist, trackId, oauthToken);
       }
     } catch (e) {
       console.error("[Mod] Lyrics fetch error:", e);
@@ -1747,12 +1807,15 @@
 
     renderLyricsBodyUI();
 
-    // Broadcast to Karaoke window and Overlay
+    // Broadcast to Karaoke window and Overlay (v1.3.7: include parsed lines, trackId, and cover)
     if (window.yandexMusicMod && window.yandexMusicMod.updateLyrics) {
       window.yandexMusicMod.updateLyrics({
         track: cleanTitle,
         artist: cleanArtist,
-        lrc: lrc || `[00:00.00] ${cleanTitle} - ${cleanArtist}\n[00:03.00] ♫ Текст песни не найден`,
+        trackId: trackId,
+        coverUrl: currentTrackCover,
+        lrc: lrc || `[00:00.00] ${cleanTitle} - ${cleanArtist}\n[00:03.00] ♫ Текст этой песни недоступен.`,
+        lines: currentParsedLyrics,
       });
     }
   }
@@ -2240,7 +2303,7 @@
   // ==========================================
   // v1.3.2: AUTO-UPDATER & COMMUNITY STATS
   // ==========================================
-  const CURRENT_MOD_VERSION = "v1.3.5";
+  const CURRENT_MOD_VERSION = "v1.3.7";
 
   async function checkModUpdates() {
     try {
@@ -3186,7 +3249,7 @@
 
             <div class="ym-modal-title">Настройки Мода</div>
 
-            <div class="ym-modal-version">v1.3.5 (YM 5.124.1)</div>
+            <div class="ym-modal-version">v1.3.7 (YM 5.124.1)</div>
 
           </div>
 
@@ -5436,7 +5499,7 @@
 
           <span class="ym-mod-btn-text">Настройки Мода</span>
 
-          <span class="ym-mod-ver-tag">v1.3.5</span>
+          <span class="ym-mod-ver-tag">v1.3.7</span>
 
         `;
 
@@ -5632,6 +5695,19 @@
 
 
 
+  // v1.3.7: Bulletproof cover URL normalizer (handles custom protocols, avatars, sizes)
+  function normalizeCoverUrl(url) {
+    if (!url || typeof url !== "string") return "";
+    let clean = url.trim();
+    if (!clean) return "";
+    clean = clean.replace(/^music-application:\/\/?/i, "");
+    clean = clean.replace(/^(?:https?:\/\/)+/i, "");
+    clean = clean.replace(/^\/\//, "");
+    clean = clean.replace("%%", "400x400");
+    clean = clean.replace(/\/(?:50x50|100x100|200x200)\b/, "/400x400");
+    return "https://" + clean;
+  }
+
   function scrapeCurrentPlayerState() {
 
     let title = "";
@@ -5666,9 +5742,9 @@
 
         if (m.artist) artists = String(m.artist).trim();
 
-        if (Array.isArray(m.artwork) && m.artwork.length > 0) {
+        if (m.artwork && m.artwork.length > 0) {
 
-          coverUrl = m.artwork[m.artwork.length - 1].src;
+          coverUrl = normalizeCoverUrl(m.artwork[m.artwork.length - 1].src);
 
         }
 
@@ -5766,9 +5842,9 @@
 
         if (!coverUrl) {
 
-          if (rawMeta.coverUri) coverUrl = "https://" + rawMeta.coverUri.replace("%%", "400x400");
+          if (rawMeta.coverUri) coverUrl = normalizeCoverUrl(rawMeta.coverUri);
 
-          else if (rawMeta.ogImage) coverUrl = "https://" + rawMeta.ogImage.replace("%%", "400x400");
+          else if (rawMeta.ogImage) coverUrl = normalizeCoverUrl(rawMeta.ogImage);
 
         }
 
@@ -5852,11 +5928,11 @@
 
       if (!coverUrl) {
 
-        const coverImg = fullscreenModal.querySelector('img[src*="avatars.yandex.net"], [data-test-id="VIBE_ALBUM_COVER"] img');
+        const coverImg = fullscreenModal.querySelector('img[src*="avatars.yandex.net"], [data-test-id="VIBE_ALBUM_COVER"] img, img');
 
-        if (coverImg && coverImg.src) {
+        if (coverImg) {
 
-          coverUrl = coverImg.src.replace(/\/(?:50x50|100x100|200x200)\b/, "/400x400");
+          coverUrl = normalizeCoverUrl(coverImg.getAttribute("src") || coverImg.currentSrc || coverImg.src);
 
         }
 
@@ -5894,10 +5970,41 @@
 
       if (!coverUrl) {
 
-        const imgEl = desktopPlayer.querySelector('[data-test-id="PLAYERBAR_DESKTOP_COVER_CONTAINER"] img, img[class*="cover"], img[src*="avatars.yandex.net"]');
+        const candidateImgs = desktopPlayer.querySelectorAll(
+          '[data-test-id="ENTITY_COVER_IMAGE"], [data-test-id="PLAYERBAR_DESKTOP_COVER_CONTAINER"] img, img[data-test-id*="COVER" i], img[class*="cover" i], img[class*="Cover" i], img[class*="avatar" i], img[src*="avatars.yandex.net"], img'
+        );
 
-        if (imgEl && imgEl.src) coverUrl = imgEl.src.replace(/\/(?:50x50|100x100|200x200)\b/, "/400x400");
+        for (const img of candidateImgs) {
+          const rawSrc = img.getAttribute("src") || img.currentSrc || img.src || "";
+          const normalized = normalizeCoverUrl(rawSrc);
+          if (normalized && (normalized.includes("avatars.yandex.net") || normalized.includes("music-content") || normalized.includes("get-music"))) {
+            coverUrl = normalized;
+            break;
+          }
+          if (!coverUrl && normalized && !normalized.includes("data:image") && !normalized.includes("favicon")) {
+            coverUrl = normalized;
+          }
+        }
 
+        if (!coverUrl) {
+          const bgEls = desktopPlayer.querySelectorAll('[style*="background-image"]');
+          for (const bgEl of bgEls) {
+            const bgMatch = (bgEl.style.backgroundImage || "").match(/url\(["']?([^"']+)["']?\)/);
+            if (bgMatch && bgMatch[1]) {
+              coverUrl = normalizeCoverUrl(bgMatch[1]);
+              break;
+            }
+          }
+        }
+
+      }
+
+      // 5b. Page Global Cover Art Fallback
+      if (!coverUrl) {
+        const globalImg = document.querySelector('img[data-test-id="ENTITY_COVER_IMAGE"], img[src*="avatars.yandex.net/get-music-content"]');
+        if (globalImg) {
+          coverUrl = normalizeCoverUrl(globalImg.getAttribute("src") || globalImg.currentSrc || globalImg.src);
+        }
       }
 
       if (!trackId) {
@@ -5961,6 +6068,13 @@
     }
 
 
+
+    if (!title && window.__lastPlayerState && window.__lastPlayerState.track && window.__lastPlayerState.track.title) {
+      title = window.__lastPlayerState.track.title;
+      if (!artists) artists = window.__lastPlayerState.track.artists || "";
+      if (!coverUrl) coverUrl = window.__lastPlayerState.track.coverUrl || "";
+      if (!trackId) trackId = window.__lastPlayerState.track.id || "";
+    }
 
     return {
 

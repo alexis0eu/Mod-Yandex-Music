@@ -766,7 +766,7 @@ function setupIpcHandlers() {
     }
 
     // 2. Forward to Karaoke
-    if (karaokeWindow && !karaokeWindow.isDestroyed() && karaokeWindow.isVisible()) {
+    if (karaokeWindow && !karaokeWindow.isDestroyed()) {
       try {
         karaokeWindow.webContents.send("karaoke:trackUpdate", state);
       } catch (e) {}
@@ -774,6 +774,18 @@ function setupIpcHandlers() {
 
     // 3. Discord RPC
     updateDiscordActivity(state);
+  });
+
+  // Resize Overlay dynamically (e.g. expanding for Apple Music full lyrics view)
+  ipcMain.on("yandexMusicMod.resizeOverlay", (_ev, width, height) => {
+    if (overlayWindow && !overlayWindow.isDestroyed()) {
+      try {
+        const [curW, curH] = overlayWindow.getSize();
+        const targetW = Math.max(380, Math.round(width || curW));
+        const targetH = Math.max(160, Math.round(height || curH));
+        overlayWindow.setSize(targetW, targetH);
+      } catch (e) {}
+    }
   });
 
   // Open external URL in system browser
@@ -803,7 +815,7 @@ function setupIpcHandlers() {
   });
 
   // Multi-Tier Cascading Lyrics Fetcher (Yandex Supplement -> LRCLib Direct -> LRCLib Search)
-  ipcMain.handle("yandexMusicMod.fetchLyrics", async (_ev, trackTitle, trackArtist, trackId = null) => {
+  ipcMain.handle("yandexMusicMod.fetchLyrics", async (_ev, trackTitle, trackArtist, trackId = null, oauthToken = null) => {
     if (!trackTitle && !trackId) return null;
     try {
       const cleanTitle = (trackTitle || "").trim();
@@ -815,7 +827,7 @@ function setupIpcHandlers() {
             url,
             {
               headers: {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                "User-Agent": "YandexMusicMod/1.3.7 (Windows NT 10.0; Win64; x64)",
                 "Accept": "application/json, text/plain, */*",
                 ...extraHeaders,
               },
@@ -850,10 +862,13 @@ function setupIpcHandlers() {
       // 1. Tier 1: Official Yandex Music Track Supplement (Zero-latency native synced lyrics)
       if (trackId && String(trackId).match(/^\d+$/)) {
         try {
-          const yandexData = await fetchJson(`https://api.music.yandex.net/tracks/${trackId}/supplement`, {
+          const ymHeaders = {
+            "User-Agent": "YandexMusicDesktopAppWindows/5.124.1",
             "X-Yandex-Music-Client": "YandexMusicDesktopAppWindows/5.124.1",
             "X-Yandex-Music-Frontend": "new",
-          });
+          };
+          if (oauthToken) ymHeaders["Authorization"] = oauthToken;
+          const yandexData = await fetchJson(`https://api.music.yandex.net/tracks/${trackId}/supplement`, ymHeaders);
 
           if (yandexData && yandexData.result && yandexData.result.lyrics) {
             const lyricsObj = yandexData.result.lyrics;

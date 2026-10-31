@@ -37,7 +37,7 @@
       },
       updatePlayerState: (state) => electron.ipcRenderer.send("yandexMusicMod.updatePlayerState", state),
       updateLyrics: (lyricsData) => electron.ipcRenderer.send("yandexMusicMod.updateLyrics", lyricsData),
-      fetchLyrics: (track, artist, trackId) => electron.ipcRenderer.invoke("yandexMusicMod.fetchLyrics", track, artist, trackId),
+      fetchLyrics: (track, artist, trackId, oauthToken) => electron.ipcRenderer.invoke("yandexMusicMod.fetchLyrics", track, artist, trackId, oauthToken),
       onExecutePlayerAction: (callback) => {
         const listener = (_e, action, payload) => callback(action, payload);
         electron.ipcRenderer.on("yandexMusicMod.executePlayerAction", listener);

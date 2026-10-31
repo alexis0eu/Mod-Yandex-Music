@@ -14,6 +14,8 @@ contextBridge.exposeInMainWorld("karaokeApi", {
   toggleKaraoke: () => {
     ipcRenderer.send("yandexMusicMod.toggleKaraoke");
   },
+  getLastPlayerState: () => ipcRenderer.invoke("yandexMusicMod.getLastPlayerState"),
+  getLastLyrics: () => ipcRenderer.invoke("yandexMusicMod.getLastLyrics"),
   getStorageValue: (key) => ipcRenderer.invoke("yandexMusicMod.getStorageValue", key),
   onStorageChanged: (callback) => {
     const listener = (_e, key, value) => callback(key, value);

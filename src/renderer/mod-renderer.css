@@ -2008,3 +2008,18 @@ button[data-test-id*="appUpdate"],
   padding: 0 !important;
   transform: scale(0) !important;
 }
+
+
+/* v1.3.7: Top Update Pill and Notification Blocker */
+div[class*="WithTopBanner_banner"],
+div[class*="UpdateNotification"],
+div[class*="AppUpdate"],
+[data-test-id*="UPDATE"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  height: 0 !important;
+  max-height: 0 !important;
+  overflow: hidden !important;
+}
