@@ -955,16 +955,60 @@ function setupIpcHandlers() {
           const geniusSearch = await fetchJson(`https://genius.com/api/search/multi?q=${q}`);
           if (geniusSearch && geniusSearch.response && geniusSearch.response.sections) {
             let songUrl = null;
+            const candidates = [];
+            const hasCyrillicQuery = /[а-яё]/i.test(`${cleanArtist} ${cleanTitle}`);
+
             for (const sec of geniusSearch.response.sections) {
               if (sec.type === "song" && Array.isArray(sec.hits)) {
                 for (const hit of sec.hits) {
-                  if (hit.result && hit.result.url) {
-                    songUrl = hit.result.url;
-                    break;
+                  const res = hit.result;
+                  if (!res || !res.url) continue;
+
+                  const fullTitle = res.full_title || res.title || "";
+                  const hitArtist = (res.primary_artist && res.primary_artist.name) || "";
+                  const hitUrl = res.url || "";
+
+                  // 1. Strict rejection of translation/romanization bot accounts & translation titles
+                  const isTransAccount = /^genius\s*(english|russian|romanization|translation|türkçe|deutsch|español|polskie)/i.test(hitArtist);
+                  const isTransTitle = /\(.*(translation|romaniz|traduc|перевод|çeviri|übersetzung).*\)/i.test(fullTitle);
+                  const isTransUrl = /-(english-translation|translations|romanized|transition)-lyrics/i.test(hitUrl);
+
+                  if (isTransAccount || isTransTitle || isTransUrl) {
+                    continue; // Skip translations entirely!
                   }
+
+                  let score = 10;
+                  const lowerHitArtist = hitArtist.toLowerCase();
+                  const lowerCleanArtist = cleanArtist.toLowerCase().replace(/,/g, " ");
+                  const artistTokens = lowerCleanArtist.split(/\s+/).filter(Boolean);
+                  for (const tok of artistTokens) {
+                    if (tok.length > 2 && lowerHitArtist.includes(tok)) {
+                      score += 15;
+                    }
+                  }
+
+                  if (hasCyrillicQuery && /[а-яё]/i.test(fullTitle)) {
+                    score += 25;
+                  }
+
+                  const lowerTitle = cleanTitle.toLowerCase();
+                  if (fullTitle.toLowerCase().includes(lowerTitle)) {
+                    score += 25;
+                  }
+
+                  const isSpeedUp = /speed\s*up|sped\s*up/i.test(cleanTitle);
+                  if (isSpeedUp && /speed\s*up|sped\s*up/i.test(fullTitle)) {
+                    score += 20;
+                  }
+
+                  candidates.push({ score, url: hitUrl });
                 }
               }
-              if (songUrl) break;
+            }
+
+            if (candidates.length > 0) {
+              candidates.sort((a, b) => b.score - a.score);
+              songUrl = candidates[0].url;
             }
 
             if (songUrl) {
@@ -988,6 +1032,10 @@ function setupIpcHandlers() {
                     block = block.replace(/<div data-exclude-from-selection="true"[\s\S]*?<\/div>/g, "");
                     block = block.replace(/<br\s*\/?>/gi, "\n");
                     block = block.replace(/<[^>]+>/g, "");
+                    block = block.replace(/^\d+\s*Contributors[\s\S]*?(?=\n|\[)/i, "");
+                    block = block.replace(/\d*\s*Embed$/i, "");
+                    block = block.replace(/^\d+\s*Contributors[\s\S]*?(?=\n|\[)/i, "");
+                    block = block.replace(/\d*\s*Embed$/i, "");
                     block = block
                       .replace(/&amp;/g, "&")
                       .replace(/&quot;/g, '"')

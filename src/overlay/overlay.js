@@ -1,4 +1,4 @@
-// Apple Music macOS MiniPlayer Overlay Controller (v1.3.12)
+// Apple Music macOS MiniPlayer Overlay Controller (v1.3.13)
 // Real-time 60fps interpolation, 1-in-1 lyrics synchronization, smooth centering scroll, click-to-seek
 
 const isBrowser = typeof window !== "undefined" && typeof document !== "undefined";
@@ -198,13 +198,13 @@ function applySyntheticTimings(items, duration, trackTitle) {
   const isSpeedUp = /speed\s*up|sped\s*up|nightcore|fast/i.test(title);
   const isSlowed = /slowed|reverb/i.test(title);
 
-  let introOffset = isSpeedUp ? 5.5 : 8.5;
-  if (isSlowed) introOffset = 11.0;
-  if (effDur < 75) introOffset = Math.min(introOffset, effDur * 0.12);
+  let introOffset = isSpeedUp ? 2.5 : 3.8;
+  if (isSlowed) introOffset = 5.5;
+  if (effDur < 75) introOffset = Math.min(introOffset, effDur * 0.06);
 
-  let outroTail = isSpeedUp ? 5.0 : 7.5;
-  if (isSlowed) outroTail = 10.0;
-  if (effDur < 75) outroTail = Math.min(outroTail, effDur * 0.10);
+  let outroTail = isSpeedUp ? 3.0 : 4.0;
+  if (isSlowed) outroTail = 6.0;
+  if (effDur < 75) outroTail = Math.min(outroTail, effDur * 0.05);
 
   const availableVocalTime = Math.max(10, effDur - introOffset - outroTail);
   const weights = items.map((it) => calculateLineWeight(it.text));
@@ -310,7 +310,7 @@ function parseLRC(lrcText, duration = 0) {
     if (!txt) return false;
     const lower = txt.toLowerCase();
     if (lower.startsWith("[текст песни") || lower.startsWith("[lyrics of")) return false;
-    if (lower.includes("contributors") || lower.includes("translations") || lower.includes("you might also like")) return false;
+    if (lower.includes("contributors") || lower.includes("translations") || lower.includes("romanization") || lower.includes("you might also like")) return false;
     if (txt === "♫ текст этой песни недоступен." || txt === "текст этой песни недоступен.") return false;
     if (!hasExplicitTime && isSectionHeader(txt)) return false;
     return true;

@@ -1,7 +1,7 @@
 (function () {
 
 // ==========================================
-// 0. AUDIO ELEMENT CAPTURE (v1.3.12)
+// 0. AUDIO ELEMENT CAPTURE (v1.3.13)
 // Intercepts detached <audio> elements created by Yandex Music Yasp player
 // ==========================================
 (function setupAudioCapture() {
@@ -1818,7 +1818,7 @@
       if (!txt) return false;
       const lower = txt.toLowerCase();
       if (lower.startsWith("[текст песни") || lower.startsWith("[lyrics of")) return false;
-      if (lower.includes("contributors") || lower.includes("translations") || lower.includes("you might also like")) return false;
+      if (lower.includes("contributors") || lower.includes("translations") || lower.includes("romanization") || lower.includes("you might also like")) return false;
       if (txt === "♫ текст этой песни недоступен." || txt === "текст этой песни недоступен.") return false;
       if (isSectionHeader(txt)) return false;
       return true;
@@ -1831,13 +1831,13 @@
       const isSpeedUp = /speed\s*up|sped\s*up|nightcore|fast/i.test(title);
       const isSlowed = /slowed|reverb/i.test(title);
 
-      let introOffset = isSpeedUp ? 5.5 : 8.5;
-      if (isSlowed) introOffset = 11.0;
-      if (dur < 75) introOffset = Math.min(introOffset, dur * 0.12);
+      let introOffset = isSpeedUp ? 2.5 : 3.8;
+      if (isSlowed) introOffset = 5.5;
+      if (dur < 75) introOffset = Math.min(introOffset, dur * 0.06);
 
-      let outroTail = isSpeedUp ? 5.0 : 7.5;
-      if (isSlowed) outroTail = 10.0;
-      if (dur < 75) outroTail = Math.min(outroTail, dur * 0.10);
+      let outroTail = isSpeedUp ? 3.0 : 4.0;
+      if (isSlowed) outroTail = 6.0;
+      if (dur < 75) outroTail = Math.min(outroTail, dur * 0.05);
 
       const availableTime = Math.max(10, dur - introOffset - outroTail);
       const weights = cleanLines.map((l) => calculateLineWeight(l.text));
@@ -1948,7 +1948,7 @@
 
     renderLyricsBodyUI();
 
-    // Broadcast to Karaoke window and Overlay (v1.3.12: include parsed lines, trackId, and cover)
+    // Broadcast to Karaoke window and Overlay (v1.3.13: include parsed lines, trackId, and cover)
     if (window.yandexMusicMod && window.yandexMusicMod.updateLyrics) {
       window.yandexMusicMod.updateLyrics({
         track: cleanTitle,
@@ -2459,7 +2459,7 @@
   // ==========================================
   // v1.3.2: AUTO-UPDATER & COMMUNITY STATS
   // ==========================================
-  const CURRENT_MOD_VERSION = "v1.3.12";
+  const CURRENT_MOD_VERSION = "v1.3.13";
 
   async function checkModUpdates() {
     try {
@@ -2904,7 +2904,7 @@
       div, span, p, a, h1, h2, h3, h4, h5, h6 {
         ${fontRule}
       }
-      /* Prevent modal and lyrics distortion from global font scaling (v1.3.12) */
+      /* Prevent modal and lyrics distortion from global font scaling (v1.3.13) */
       #ym-mod-settings-modal, #ym-proposal-modal, #ym-mod-fullscreen-lyrics, .ym-mod-modal {
         font-size: ${Math.round(14 * modalSizeScale)}px !important;
       }
@@ -3427,7 +3427,7 @@
 
             <div class="ym-modal-title">Настройки Мода</div>
 
-            <div class="ym-modal-version">v1.3.12 (YM 5.124.1)</div>
+            <div class="ym-modal-version">v1.3.13 (YM 5.124.1)</div>
 
           </div>
 
@@ -5677,7 +5677,7 @@
 
           <span class="ym-mod-btn-text">Настройки Мода</span>
 
-          <span class="ym-mod-ver-tag">v1.3.12</span>
+          <span class="ym-mod-ver-tag">v1.3.13</span>
 
         `;
 
