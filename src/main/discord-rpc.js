@@ -1,7 +1,7 @@
 const net = require("net");
 const process = require("process");
 
-const CLIENT_ID = "1283109459463377011";
+const CLIENT_ID = "1269826362399522849";
 
 class DiscordRPC {
   constructor(clientId = CLIENT_ID) {

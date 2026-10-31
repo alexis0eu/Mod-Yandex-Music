@@ -48,7 +48,7 @@ function initModMain() {
 
   // 1. Discord RPC
   const initialAppTitle = settingsManager.get("discordRPC/appTitle", "ru");
-  const initialClientId = initialAppTitle === "en" ? "1269807014393942046" : "1283109459463377011";
+  const initialClientId = initialAppTitle === "en" ? "1269807014393942046" : "1269826362399522849";
   discordRPC = new DiscordRPC(initialClientId);
   const rpcEnabled = settingsManager.get("discordRPC/enabled", true);
   discordRPC.enabled = rpcEnabled;
@@ -58,7 +58,7 @@ function initModMain() {
 
   settingsManager.onChange((key, value) => {
     if (key === "discordRPC/appTitle") {
-      const newCid = value === "en" ? "1269807014393942046" : "1283109459463377011";
+      const newCid = value === "en" ? "1269807014393942046" : "1269826362399522849";
       if (discordRPC) {
         discordRPC.setClientId(newCid);
         if (lastPlayerState) updateDiscordActivity(lastPlayerState);
@@ -336,8 +336,8 @@ function getOrCreateOverlayWindow() {
 
   const primaryDisplay = screen.getPrimaryDisplay();
   const { width } = primaryDisplay.workAreaSize;
-  const overlayWidth = 480;
-  const overlayHeight = 200;
+  const overlayWidth = 380;
+  const overlayHeight = 175;
   const posX = width - overlayWidth - 30;
   const posY = 40;
 
@@ -352,7 +352,7 @@ function getOrCreateOverlayWindow() {
     transparent: true,
     alwaysOnTop: true,
     skipTaskbar: true,
-    resizable: false,
+    resizable: true,
     hasShadow: false,
     show: false,
     backgroundColor: "#00000000",
@@ -452,7 +452,7 @@ function getOrCreateKaraokeWindow() {
     transparent: true,
     alwaysOnTop: true,
     skipTaskbar: true,
-    resizable: false,
+    resizable: true,
     hasShadow: false,
     show: false,
     backgroundColor: "#00000000",
@@ -827,7 +827,7 @@ function setupIpcHandlers() {
             url,
             {
               headers: {
-                "User-Agent": "YandexMusicMod/1.3.7 (Windows NT 10.0; Win64; x64)",
+                "User-Agent": "YandexMusicMod/1.3.8 (Windows NT 10.0; Win64; x64)",
                 "Accept": "application/json, text/plain, */*",
                 ...extraHeaders,
               },

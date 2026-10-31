@@ -2,15 +2,37 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Floating Karaoke Lyrics</title>
+  <title>Apple Music Karaoke Pill</title>
   <link rel="stylesheet" href="karaoke.css">
 </head>
-<body>
-  <div class="karaoke-banner" id="karaoke-banner">
-    <div class="lyrics-container" id="lyrics-container">
-      <div class="lyric-line lyric-prev" id="lyric-prev"></div>
-      <div class="lyric-line lyric-active" id="lyric-active">Яндекс Музыка Караоке</div>
-      <div class="lyric-line lyric-next" id="lyric-next">Ожидание трека...</div>
+<body class="karaoke-body">
+  <div class="karaoke-capsule" id="karaoke-capsule">
+    <!-- Album Artwork -->
+    <div class="capsule-art-wrap no-drag" id="capsule-art-wrap">
+      <img id="capsule-cover" class="capsule-cover" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23222533'/><text x='50' y='55' font-size='32' text-anchor='middle' fill='%23666'>♫</text></svg>" alt="Cover" />
+    </div>
+
+    <!-- Lyrics Stream -->
+    <div class="capsule-lyrics-wrap">
+      <div class="capsule-line capsule-line-active" id="capsule-line-active">Яндекс Музыка</div>
+      <div class="capsule-line capsule-line-next" id="capsule-line-next">Ожидание трека...</div>
+    </div>
+
+    <!-- Right Controls -->
+    <div class="capsule-actions no-drag">
+      <button class="capsule-btn" id="btn-karaoke-play" title="Воспроизведение / Пауза">
+        <svg id="karaoke-icon-play" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+          <path d="M8 5v14l11-7z"/>
+        </svg>
+        <svg id="karaoke-icon-pause" class="hidden" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+          <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+        </svg>
+      </button>
+      <button class="capsule-btn btn-close" id="btn-karaoke-close" title="Закрыть (Ctrl+Shift+L)">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+      </button>
     </div>
   </div>
 

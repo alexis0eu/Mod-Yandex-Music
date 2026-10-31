@@ -1,5 +1,86 @@
 (function () {
 
+// ==========================================
+// 0. AUDIO ELEMENT CAPTURE (v1.3.8)
+// Intercepts detached <audio> elements created by Yandex Music Yasp player
+// ==========================================
+(function setupAudioCapture() {
+  if (window.__ymAudioHookInstalled) return;
+  window.__ymAudioHookInstalled = true;
+  window.__ymActiveAudio = null;
+  window.__ymKnownAudios = new Set();
+
+  function registerAudio(audio) {
+    if (!audio || !(audio instanceof HTMLMediaElement)) return;
+    window.__ymKnownAudios.add(audio);
+    window.__ymActiveAudio = audio;
+
+    if (!audio.__ymTrackingAttached) {
+      audio.__ymTrackingAttached = true;
+      const onTick = () => {
+        window.__ymActiveAudio = audio;
+        if (typeof window.__ymOnAudioTimeUpdate === "function") {
+          window.__ymOnAudioTimeUpdate(audio.currentTime, audio.duration, !audio.paused);
+        }
+      };
+      audio.addEventListener("timeupdate", onTick);
+      audio.addEventListener("play", onTick);
+      audio.addEventListener("pause", onTick);
+      audio.addEventListener("seeking", onTick);
+      audio.addEventListener("seeked", onTick);
+      audio.addEventListener("durationchange", onTick);
+      audio.addEventListener("loadedmetadata", onTick);
+    }
+  }
+
+  window.__ymGetActiveAudio = function() {
+    if (window.__ymActiveAudio && !window.__ymActiveAudio.error) {
+      return window.__ymActiveAudio;
+    }
+    if (window.__ymKnownAudios && window.__ymKnownAudios.size > 0) {
+      for (const a of window.__ymKnownAudios) {
+        if (!a.paused || a.currentTime > 0) return a;
+      }
+      const first = window.__ymKnownAudios.values().next().value;
+      if (first) return first;
+    }
+    return document.querySelector("audio") || null;
+  };
+
+  try {
+    const origCreateElement = document.createElement.bind(document);
+    document.createElement = function (tagName, options) {
+      const el = origCreateElement(tagName, options);
+      if (typeof tagName === "string" && tagName.toLowerCase() === "audio") {
+        registerAudio(el);
+      }
+      return el;
+    };
+  } catch (e) {}
+
+  try {
+    const origAudio = window.Audio;
+    if (origAudio) {
+      const PatchedAudio = function (...args) {
+        const el = new origAudio(...args);
+        registerAudio(el);
+        return el;
+      };
+      PatchedAudio.prototype = origAudio.prototype;
+      window.Audio = PatchedAudio;
+    }
+  } catch (e) {}
+
+  try {
+    const origPlay = HTMLMediaElement.prototype.play;
+    HTMLMediaElement.prototype.play = function (...args) {
+      registerAudio(this);
+      return origPlay.apply(this, args);
+    };
+  } catch (e) {}
+})();
+
+
 
 
 // ==========================================
@@ -1807,7 +1888,7 @@
 
     renderLyricsBodyUI();
 
-    // Broadcast to Karaoke window and Overlay (v1.3.7: include parsed lines, trackId, and cover)
+    // Broadcast to Karaoke window and Overlay (v1.3.8: include parsed lines, trackId, and cover)
     if (window.yandexMusicMod && window.yandexMusicMod.updateLyrics) {
       window.yandexMusicMod.updateLyrics({
         track: cleanTitle,
@@ -2202,9 +2283,18 @@
     hookDirectAudioElement();
   }
 
+  
+  function getActiveAudioElement() {
+    if (typeof window.__ymGetActiveAudio === "function") {
+      const a = window.__ymGetActiveAudio();
+      if (a) return a;
+    }
+    return document.querySelector("audio") || null;
+  }
+
   function seekAudioTo(targetSeconds) {
     try {
-      const audio = document.querySelector("audio");
+      const audio = getActiveAudioElement();
       if (audio) {
         audio.currentTime = targetSeconds;
       }
@@ -2213,7 +2303,13 @@
 
   function hookDirectAudioElement() {
     try {
-      const audio = document.querySelector("audio");
+      window.__ymOnAudioTimeUpdate = (currentTime, duration, isPlaying) => {
+        if (fsLyricsVisible) {
+          updateFullscreenLyricsActiveLine(currentTime);
+          updateAppleMusicProgress(currentTime, duration || 0, isPlaying);
+        }
+      };
+      const audio = getActiveAudioElement();
       if (audio && !audio.__ymAmLyricsHooked) {
         audio.__ymAmLyricsHooked = true;
         audio.addEventListener("timeupdate", () => {
@@ -2303,7 +2399,7 @@
   // ==========================================
   // v1.3.2: AUTO-UPDATER & COMMUNITY STATS
   // ==========================================
-  const CURRENT_MOD_VERSION = "v1.3.7";
+  const CURRENT_MOD_VERSION = "v1.3.8";
 
   async function checkModUpdates() {
     try {
@@ -2748,9 +2844,29 @@
       div, span, p, a, h1, h2, h3, h4, h5, h6 {
         ${fontRule}
       }
-      /* Prevent modal and lyrics distortion from global font scaling */
+      /* Prevent modal and lyrics distortion from global font scaling (v1.3.8) */
       #ym-mod-settings-modal, #ym-proposal-modal, #ym-mod-fullscreen-lyrics, .ym-mod-modal {
         font-size: ${Math.round(14 * modalSizeScale)}px !important;
+      }
+      /* STRICT ISOLATION: Keep Apple Music views with pure Apple SF Pro / Inter typography */
+      #ym-am-lyrics-modal,
+      #ym-am-lyrics-modal *,
+      .ym-am-lyrics-modal,
+      .ym-am-lyrics-modal *,
+      #ym-am-lyrics-body,
+      #ym-am-lyrics-body *,
+      .ym-am-lrc-line,
+      .ym-am-lrc-line *,
+      .ym-am-title,
+      .ym-am-artist,
+      .ym-am-time,
+      .overlay-card,
+      .overlay-card *,
+      .karaoke-banner,
+      .karaoke-banner * {
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", "Segoe UI", Roboto, sans-serif !important;
+        letter-spacing: normal !important;
+        text-transform: none !important;
       }
       ${extraCss}
     `;
@@ -3249,7 +3365,7 @@
 
             <div class="ym-modal-title">Настройки Мода</div>
 
-            <div class="ym-modal-version">v1.3.7 (YM 5.124.1)</div>
+            <div class="ym-modal-version">v1.3.8 (YM 5.124.1)</div>
 
           </div>
 
@@ -5499,7 +5615,7 @@
 
           <span class="ym-mod-btn-text">Настройки Мода</span>
 
-          <span class="ym-mod-ver-tag">v1.3.7</span>
+          <span class="ym-mod-ver-tag">v1.3.8</span>
 
         `;
 

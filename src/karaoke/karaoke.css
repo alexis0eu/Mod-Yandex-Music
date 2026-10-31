@@ -1,6 +1,8 @@
+/* Apple Music Floating Karaoke Pill Stylesheet (v1.3.8) */
 :root {
-  --accent: #007acc;
-  --accent-glow: rgba(0, 122, 204, 0.65);
+  --karaoke-bg: rgba(22, 22, 26, 0.86);
+  --karaoke-border: rgba(255, 255, 255, 0.14);
+  --karaoke-active-glow: rgba(255, 255, 255, 0.45);
 }
 
 * {
@@ -8,80 +10,135 @@
   margin: 0;
   padding: 0;
   user-select: none;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", "Segoe UI", Roboto, sans-serif !important;
+  -webkit-font-smoothing: antialiased;
 }
 
-body {
-  background: transparent;
+body.karaoke-body {
+  background: transparent !important;
   width: 100vw;
   height: 100vh;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  pointer-events: none;
+  padding: 6px;
 }
 
-.karaoke-banner {
-  width: 660px;
-  height: 84px;
-  background: rgba(14, 16, 24, 0.78);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 18px;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.75), 0 2px 8px rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 6px 20px;
-  position: relative;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+.no-drag {
+  -webkit-app-region: no-drag !important;
 }
 
-.lyrics-container {
+/* Floating Capsule Pill */
+.karaoke-capsule {
+  width: 100%;
+  max-width: 520px;
+  height: 58px;
+  background: var(--karaoke-bg);
+  backdrop-filter: blur(40px) saturate(210%);
+  -webkit-backdrop-filter: blur(40px) saturate(210%);
+  border: 1px solid var(--karaoke-border);
+  border-radius: 9999px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.15);
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  text-align: center;
+  gap: 12px;
+  padding: 6px 14px 6px 8px;
+  cursor: grab;
+  -webkit-app-region: drag;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.karaoke-capsule:active {
+  cursor: grabbing;
+}
+
+/* Album Art */
+.capsule-art-wrap {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.capsule-cover {
   width: 100%;
   height: 100%;
-  gap: 3px;
+  object-fit: cover;
+  display: block;
+}
+
+/* Lyrics Stream */
+.capsule-lyrics-wrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
   overflow: hidden;
 }
 
-.lyric-line {
+.capsule-line {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 95%;
-  line-height: 1.25;
-  letter-spacing: 0.2px;
+  letter-spacing: -0.15px;
 }
 
-.lyric-prev {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.38);
-  filter: blur(0.3px);
-  transform: translateY(1px);
-  transition: all 0.22s ease-out;
-}
-
-.lyric-active {
-  font-size: 21px;
+.capsule-line-active {
+  font-size: 14.5px;
   font-weight: 700;
   color: #ffffff;
-  text-shadow: 0 0 16px var(--accent-glow), 0 2px 6px rgba(0, 0, 0, 0.9);
-  transform: scale(1.03);
-  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-  letter-spacing: 0.3px;
+  text-shadow: 0 0 14px var(--karaoke-active-glow), 0 2px 6px rgba(0, 0, 0, 0.7);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.lyric-next {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.28);
-  filter: blur(0.5px);
-  transform: translateY(-1px);
-  transition: all 0.22s ease-out;
+.capsule-line-next {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.42);
+  transition: all 0.2s ease;
+}
+
+/* Actions */
+.capsule-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.capsule-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  padding: 0;
+}
+
+.capsule-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  transform: scale(1.08);
+}
+
+.capsule-btn.btn-close:hover {
+  background: #ff3b30;
+  border-color: #ff3b30;
+  color: #ffffff;
+}
+
+.hidden {
+  display: none !important;
 }

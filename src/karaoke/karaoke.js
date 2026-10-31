@@ -1,9 +1,10 @@
-// Yandex Music Floating Karaoke Window Controller (v1.3.7)
-// Features: 60fps sub-millisecond interpolation, robust multi-tag LRC parser, instant state pull, Apple Music styling
+// Apple Music Floating Karaoke Pill Controller (v1.3.8)
+// Real-time 60fps interpolation, stable track identity, 1-in-1 lyrics synchronization
 
 let lines = [];
 let currentIndex = -1;
-let currentTrackId = null;
+let currentTrackKey = "";
+let lyricsTrackKey = "";
 let currentDuration = 0;
 let isPlaying = false;
 
@@ -14,9 +15,37 @@ let trackDuration = 0;
 let playbackSpeed = 1.0;
 let animFrameId = null;
 
-const lyricPrev = document.getElementById("lyric-prev");
-const lyricActive = document.getElementById("lyric-active");
-const lyricNext = document.getElementById("lyric-next");
+const capsuleCover = document.getElementById("capsule-cover");
+const lineActive = document.getElementById("capsule-line-active");
+const lineNext = document.getElementById("capsule-line-next");
+const btnPlay = document.getElementById("btn-karaoke-play");
+const iconPlay = document.getElementById("karaoke-icon-play");
+const iconPause = document.getElementById("karaoke-icon-pause");
+const btnClose = document.getElementById("btn-karaoke-close");
+
+function normalizeCoverUrl(url) {
+  if (!url || typeof url !== "string") return "";
+  let clean = url.trim();
+  if (!clean) return "";
+  clean = clean.replace(/^music-application:\/?\/?/i, "");
+  clean = clean.replace(/^(?:https?:\/?\/)+/i, "");
+  clean = clean.replace(/^\/\//, "");
+  clean = clean.replace("%%", "200x200");
+  clean = clean.replace(/\/(?:50x50|100x100|400x400)\b/, "/200x200");
+  return "https://" + clean;
+}
+
+function getTrackKey(track) {
+  if (!track) return "";
+  const t = (track.title || "").trim().toLowerCase();
+  let a = "";
+  if (Array.isArray(track.artists)) {
+    a = track.artists.map((x) => (typeof x === "object" ? x.name : x)).join(", ");
+  } else {
+    a = String(track.artists || "");
+  }
+  return `${t} — ${a.trim().toLowerCase()}`;
+}
 
 function interpolatePosition(basePos, baseTs, nowTs, duration, speed, playing) {
   const dur = Number(duration) > 0 ? Number(duration) : Infinity;
@@ -56,7 +85,7 @@ function parseLRC(lrcText, duration = 0) {
           text: item.text || item.line || "",
         };
       })
-      .filter((x) => x.text)
+      .filter((x) => x.text && x.text.trim())
       .sort((a, b) => a.time - b.time);
   }
 
@@ -65,7 +94,6 @@ function parseLRC(lrcText, duration = 0) {
   const parsed = [];
   let globalOffsetMs = 0;
 
-  // 1. Check for global [offset:+/-ms] tag
   for (const line of rawLines) {
     const offsetMatch = line.match(/^\[offset:\s*([+-]?\d+)\]/i);
     if (offsetMatch) {
@@ -74,13 +102,11 @@ function parseLRC(lrcText, duration = 0) {
     }
   }
 
-  // 2. Parse lines with one or multiple timestamp tags
   const tagRegex = /\[(\d{1,2}):(\d{2})(?:[.:](\d{1,3}))?\]/g;
 
   for (const line of rawLines) {
     const trimmed = line.trim();
     if (!trimmed) continue;
-    // Skip metadata headers e.g. [ti:Title], [ar:Artist], [al:Album], [by:Name]
     if (/^\[([a-zA-Z][a-zA-Z0-9_-]*):\s*([^\]]*)\]/.test(trimmed)) continue;
 
     const timestamps = [];
@@ -101,58 +127,55 @@ function parseLRC(lrcText, duration = 0) {
       timestamps.push(time);
     }
 
-    if (timestamps.length > 0) {
-      const text = trimmed.replace(tagRegex, "").trim();
-      if (text) {
+    const cleanText = trimmed.replace(tagRegex, "").trim();
+    if (cleanText) {
+      if (timestamps.length > 0) {
         for (const t of timestamps) {
-          parsed.push({ time: t, text });
+          parsed.push({ time: t, text: cleanText });
         }
+      } else {
+        parsed.push({ time: 0, text: cleanText });
       }
     }
-  }
-
-  // 3. Fallback: If text was plain without timestamps, distribute evenly
-  if (parsed.length === 0) {
-    const cleanLines = rawLines.map((l) => l.trim()).filter((l) => l.length > 0 && !/^\[.*\]/.test(l));
-    const dur = duration > 10 ? duration : Math.max(30, cleanLines.length * 4);
-    const step = dur / Math.max(1, cleanLines.length);
-    cleanLines.forEach((text, i) => {
-      parsed.push({ time: Math.round(i * step * 10) / 10, text });
-    });
   }
 
   return parsed.sort((a, b) => a.time - b.time);
 }
 
-function updateLyricsDisplay(index) {
-  if (index === currentIndex) return;
-  currentIndex = index;
-
-  if (index < 0 || index >= lines.length) {
-    if (lyricPrev) lyricPrev.textContent = "";
-    if (lyricActive) lyricActive.textContent = lines.length > 0 ? "♫ Вступление..." : "♫ Текст этой песни недоступен.";
-    if (lyricNext) lyricNext.textContent = lines[0] ? lines[0].text : "";
+function syncPosition(pos) {
+  if (!lines || lines.length === 0) {
+    if (lineActive) lineActive.textContent = "♫ Текст этой песни недоступен.";
+    if (lineNext) lineNext.textContent = "";
     return;
   }
 
-  if (lyricPrev) lyricPrev.textContent = index > 0 ? lines[index - 1].text : "";
-  if (lyricActive) lyricActive.textContent = lines[index].text;
-  if (lyricNext) lyricNext.textContent = index < lines.length - 1 ? lines[index + 1].text : "";
-}
-
-function syncPosition(position) {
-  if (!lines || lines.length === 0) return;
-
-  let found = -1;
+  let activeIdx = -1;
   for (let i = 0; i < lines.length; i++) {
-    if (position >= lines[i].time) {
-      found = i;
+    if (lines[i].time <= pos + 0.15) {
+      activeIdx = i;
     } else {
       break;
     }
   }
 
-  updateLyricsDisplay(found);
+  if (activeIdx === -1 && lines.length > 0) {
+    activeIdx = 0;
+  }
+
+  if (activeIdx !== currentIndex) {
+    currentIndex = activeIdx;
+    if (lineActive && activeIdx >= 0 && activeIdx < lines.length) {
+      lineActive.textContent = lines[activeIdx].text;
+    }
+    if (lineNext) {
+      const nextIdx = activeIdx + 1;
+      if (nextIdx < lines.length) {
+        lineNext.textContent = lines[nextIdx].text;
+      } else {
+        lineNext.textContent = "♫ Конец трека";
+      }
+    }
+  }
 }
 
 function tickInterpolation() {
@@ -206,32 +229,36 @@ function applyLyricsData(lyricsData) {
     const dur = trackDuration > 0 ? trackDuration : (currentDuration > 0 ? currentDuration : 0);
     lines = parseLRC(src, dur);
     currentIndex = -1;
+    lyricsTrackKey = currentTrackKey;
     if (lines.length > 0) {
       const pos = getInterpolatedPosition();
       syncPosition(pos);
-    } else if (lyricActive) {
-      lyricActive.textContent = "♫ Текст этой песни недоступен.";
+    } else if (lineActive) {
+      lineActive.textContent = "♫ Текст этой песни недоступен.";
+      if (lineNext) lineNext.textContent = "";
     }
   } else {
     lines = [];
     currentIndex = -1;
-    if (lyricActive) {
-      lyricActive.textContent = "♫ Текст отсутствует";
-    }
+    if (lineActive) lineActive.textContent = "♫ Текст отсутствует";
+    if (lineNext) lineNext.textContent = "";
   }
 }
 
-// Accent Color from Settings
-async function applyAccentColor() {
-  try {
-    if (window.karaokeApi && window.karaokeApi.getStorageValue) {
-      const accent = await window.karaokeApi.getStorageValue("custom-themes/accent");
-      if (accent) {
-        document.documentElement.style.setProperty("--accent", accent);
-        document.documentElement.style.setProperty("--accent-glow", `${accent}99`);
-      }
+if (btnPlay) {
+  btnPlay.addEventListener("click", () => {
+    if (window.karaokeApi && window.karaokeApi.sendPlayerAction) {
+      window.karaokeApi.sendPlayerAction("playPause");
     }
-  } catch (e) {}
+  });
+}
+
+if (btnClose) {
+  btnClose.addEventListener("click", () => {
+    if (window.karaokeApi && window.karaokeApi.toggleKaraoke) {
+      window.karaokeApi.toggleKaraoke();
+    }
+  });
 }
 
 if (typeof window !== "undefined" && window.karaokeApi) {
@@ -240,6 +267,14 @@ if (typeof window !== "undefined" && window.karaokeApi) {
     const { track, progress, isPlaying: playing } = state;
 
     isPlaying = !!playing;
+
+    if (isPlaying) {
+      if (iconPlay) iconPlay.classList.add("hidden");
+      if (iconPause) iconPause.classList.remove("hidden");
+    } else {
+      if (iconPlay) iconPlay.classList.remove("hidden");
+      if (iconPause) iconPause.classList.add("hidden");
+    }
 
     if (progress) {
       const newPos = Number(progress.position) || 0;
@@ -254,22 +289,25 @@ if (typeof window !== "undefined" && window.karaokeApi) {
     }
 
     if (track) {
-      const trackKey = track.id || `${track.title}-${track.artists}`;
-      if (trackKey !== currentTrackId) {
-        currentTrackId = trackKey;
-        currentIndex = -1;
-        const artist = Array.isArray(track.artists)
-          ? track.artists.map((a) => (typeof a === "object" ? a.name : a)).join(", ")
-          : track.artists || "";
-
-        if (track.lyrics) {
-          lines = parseLRC(track.lyrics, currentDuration);
-        } else {
+      const newTrackKey = getTrackKey(track);
+      if (newTrackKey && newTrackKey !== currentTrackKey) {
+        currentTrackKey = newTrackKey;
+        if (lyricsTrackKey !== newTrackKey) {
+          currentIndex = -1;
           lines = [];
-          if (lyricPrev) lyricPrev.textContent = "";
-          if (lyricActive) lyricActive.textContent = `${track.title || "Трек"} — ${artist || "..."}`;
-          if (lyricNext) lyricNext.textContent = "Загрузка текста...";
+          const artist = Array.isArray(track.artists)
+            ? track.artists.map((a) => (typeof a === "object" ? a.name : a)).join(", ")
+            : track.artists || "";
+          if (lineActive) lineActive.textContent = `${track.title || "Трек"} — ${artist || "..."}`;
+          if (lineNext) lineNext.textContent = "Синхронизация текста...";
         }
+      }
+
+      // Cover art
+      const rawCover = track.coverUrl || track.coverUri || (track.ogImage ? "https://" + track.ogImage.replace("%%", "200x200") : "");
+      const coverUrl = normalizeCoverUrl(rawCover);
+      if (coverUrl && capsuleCover && capsuleCover.src !== coverUrl) {
+        capsuleCover.src = coverUrl;
       }
     }
 
@@ -284,14 +322,7 @@ if (typeof window !== "undefined" && window.karaokeApi) {
     applyLyricsData(lyricsData);
   });
 
-  window.karaokeApi.onStorageChanged((key, value) => {
-    if (key === "custom-themes/accent") {
-      document.documentElement.style.setProperty("--accent", value);
-      document.documentElement.style.setProperty("--accent-glow", `${value}99`);
-    }
-  });
-
-  // Pull immediately on startup to avoid cold-start empty state
+  // Hydrate immediately
   if (window.karaokeApi.getLastPlayerState) {
     window.karaokeApi.getLastPlayerState().then((state) => {
       if (state && state.track) {
@@ -301,7 +332,7 @@ if (typeof window !== "undefined" && window.karaokeApi) {
           trackDuration = state.progress.duration;
           basePosition = state.progress.position || 0;
         }
-        currentTrackId = state.track.id || `${state.track.title}-${state.track.artists}`;
+        currentTrackKey = getTrackKey(state.track);
         if (isPlaying) startInterpolation();
       }
     }).catch(() => {});
@@ -312,6 +343,4 @@ if (typeof window !== "undefined" && window.karaokeApi) {
       if (lyricsData) applyLyricsData(lyricsData);
     }).catch(() => {});
   }
-
-  applyAccentColor();
 }

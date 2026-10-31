@@ -1736,8 +1736,16 @@ button[aria-label*="Текст"] {
   flex-direction: column !important;
   gap: 16px !important;
   scroll-behavior: smooth !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
   mask-image: linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%) !important;
   -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%) !important;
+}
+
+.ym-am-lyrics-body::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 .ym-am-compact .ym-am-lyrics-body {

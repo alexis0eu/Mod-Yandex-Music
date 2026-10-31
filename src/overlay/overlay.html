@@ -2,117 +2,143 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Yandex Music Gaming Overlay</title>
+  <title>Apple Music MiniPlayer HUD</title>
   <link rel="stylesheet" href="overlay.css">
 </head>
-<body class="theme-steam">
-  <div class="overlay-card" id="overlay-card">
-    <!-- Draggable Header -->
-    <div class="header-bar">
-      <div class="header-left">
-        <span class="hud-badge"><span class="status-dot" id="status-dot"></span> GAMING HUD</span>
-        <span class="hud-title">Яндекс Музыка</span>
-      </div>
-      <div class="header-right no-drag">
-        <button id="btn-ghost" class="hud-btn" title="Включить/выключить сквозной клик (Ghost mode)">
-          <span class="btn-icon">👻</span>
-          <span class="btn-text" id="ghost-label">Клик</span>
-        </button>
-        <button id="btn-lyrics-toggle" class="hud-btn active" title="Развернуть/свернуть текст песни (Apple Music View)">
-          <span class="btn-icon">💬</span>
-        </button>
-        <button id="btn-karaoke" class="hud-btn" title="Открыть плавающее караоке (Ctrl+Shift+L)">
-          <span class="btn-icon">🎤</span>
-        </button>
-        <button id="btn-close" class="hud-btn btn-close" title="Скрыть оверлей (Ctrl+Shift+O)">✕</button>
-      </div>
-    </div>
+<body class="am-body">
+  <div class="am-player-card" id="am-player-card">
+    <!-- Ambient artwork glow layer behind the card -->
+    <div class="am-ambient-glow" id="am-ambient-glow"></div>
 
-    <!-- Main Content Area -->
-    <div class="content-row">
-      <!-- Album Art & Visualizer -->
-      <div class="cover-wrapper no-drag">
-        <img id="track-cover" class="track-cover" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23222533'/><text x='50' y='55' font-size='32' text-anchor='middle' fill='%23666'>♫</text></svg>" alt="Cover" />
-        <div class="equalizer-bars" id="eq-bars">
-          <div class="bar bar-1"></div>
-          <div class="bar bar-2"></div>
-          <div class="bar bar-3"></div>
-          <div class="bar bar-4"></div>
+    <!-- MiniPlayer Header / Top Bar (Draggable) -->
+    <div class="am-header" id="am-header">
+      <!-- Left: Album Artwork -->
+      <div class="am-cover-wrap no-drag" id="am-cover-wrap" title="Нажмите для переключения режима обложки">
+        <img id="am-cover" class="am-cover" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23222533'/><text x='50' y='55' font-size='32' text-anchor='middle' fill='%23666'>♫</text></svg>" alt="Cover" />
+        <div class="am-pip-badge" id="am-pip-badge" title="Режим обложки">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="3" width="20" height="14" rx="2"/>
+            <rect x="12" y="9" width="8" height="6" rx="1" fill="currentColor"/>
+          </svg>
         </div>
       </div>
 
-      <!-- Info & Controls -->
-      <div class="player-details">
-        <div class="meta-container">
-          <div class="track-title" id="track-title">Трек не воспроизводится</div>
-          <div class="track-artist" id="track-artist">Откройте Яндекс Музыку</div>
-          <div class="hud-badge-row">
-            <div class="hud-badge-lossless">
-              <svg width="12" height="9" viewBox="0 0 14 10" fill="none" stroke="currentColor" stroke-width="1.4">
-                <path d="M1 5c1-3 2-3 3 0s2 3 3 0 2-3 3 0 2 3 3 0"/>
-              </svg>
-              <span>Lossless</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Progress Bar -->
-        <div class="progress-section no-drag">
-          <span class="time-label" id="time-current">0:00</span>
-          <div class="progress-bar-container" id="progress-bar-container">
-            <div class="progress-bar-fill" id="progress-bar-fill"></div>
-            <div class="progress-bar-thumb" id="progress-bar-thumb"></div>
-          </div>
-          <span class="time-label" id="time-total">-0:00</span>
-        </div>
-
-        <!-- Controls Row -->
-        <div class="controls-row no-drag">
-          <button class="ctrl-btn" id="btn-prev" title="Предыдущий трек">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-              <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
+      <!-- Center: Track Title, Artist - Album, Lossless badge -->
+      <div class="am-meta">
+        <div class="am-title" id="am-title">Трек не воспроизводится</div>
+        <div class="am-artist" id="am-artist">Яндекс Музыка</div>
+        <div class="am-badge-row">
+          <div class="am-lossless-badge">
+            <svg width="12" height="8" viewBox="0 0 14 10" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M1 5c1-3 2-3 3 0s2 3 3 0 2-3 3 0 2 3 3 0"/>
             </svg>
-          </button>
-          
-          <button class="ctrl-btn btn-play" id="btn-play" title="Воспроизведение / Пауза">
-            <svg id="icon-play" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-              <path d="M8 5v14l11-7z"/>
-            </svg>
-            <svg id="icon-pause" class="hidden" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-              <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
-            </svg>
-          </button>
-
-          <button class="ctrl-btn" id="btn-next" title="Следующий трек">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-              <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
-            </svg>
-          </button>
-
-          <button class="ctrl-btn btn-like" id="btn-like" title="Нравится">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-            </svg>
-          </button>
-
-          <div class="shortcut-hint" title="Быстрые клавиши: Ctrl+Shift+O (HUD) / Ctrl+Shift+L (Караоке)">
-            🎮 Ctrl+Shift+O
+            <span>Lossless</span>
           </div>
         </div>
       </div>
+
+      <!-- Right: Window Controls (macOS style — ⤢ ✕) -->
+      <div class="am-win-controls no-drag">
+        <button class="am-win-btn am-btn-ghost" id="btn-ghost" title="Режим сквозного клика (Ghost / Click-through)">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M9 18h6m-3-15a6 6 0 00-6 6c0 3.5 2 6 2 9 0 1 .5 2 2 2h4c1.5 0 2-1 2-2 0-3 2-5.5 2-9a6 6 0 00-6-6z"/>
+          </svg>
+        </button>
+        <button class="am-win-btn am-btn-compact" id="btn-compact" title="Компактный режим (Свернуть / Развернуть)">
+          <svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor">
+            <rect x="4" y="11" width="16" height="2" rx="1"/>
+          </svg>
+        </button>
+        <button class="am-win-btn am-btn-popout" id="btn-popout" title="Развернуть текст Apple Music (⤢)">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+          </svg>
+        </button>
+        <button class="am-win-btn am-btn-close" id="btn-close" title="Закрыть HUD (Ctrl+Shift+O)">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
     </div>
 
-    <!-- 1-in-1 Synchronized Karaoke Rolling Strip (Compact Mode) -->
-    <div class="overlay-lyrics-container" id="overlay-lyrics-container">
-      <div class="overlay-lyric-prev" id="overlay-lyric-prev"></div>
-      <div class="overlay-lyric-active" id="overlay-lyrics-active">♫ Текст песни синхронизируется...</div>
-      <div class="overlay-lyric-next" id="overlay-lyric-next"></div>
+    <!-- Scrubber Bar (Interactive Apple Music Slider) -->
+    <div class="am-scrubber-section no-drag" id="am-scrubber-section">
+      <span class="am-time am-time-current" id="am-time-current">0:00</span>
+      <div class="am-slider-track" id="am-slider-track">
+        <div class="am-slider-fill" id="am-slider-fill"></div>
+        <div class="am-slider-thumb" id="am-slider-thumb"></div>
+      </div>
+      <span class="am-time am-time-remaining" id="am-time-remaining">-0:00</span>
     </div>
 
-    <!-- Apple Music Full Lyrics View (Expanded Mode) -->
-    <div class="overlay-full-lyrics hidden" id="overlay-full-lyrics">
-      <div class="full-lyrics-scroll" id="full-lyrics-scroll">
-        <div class="full-lyrics-empty" id="full-lyrics-empty">Текст этой песни недоступен.</div>
+    <!-- Single-Line 1-in-1 Synced Karaoke Preview (Compact Mode) -->
+    <div class="am-compact-karaoke no-drag" id="am-compact-karaoke">
+      <div class="am-compact-line" id="am-compact-line">♫ Синхронизация текста...</div>
+    </div>
+
+    <!-- Scrolling Lyrics Area (Expanded Apple Music Mode - matches media_1793263294398_ba08c3d2.png) -->
+    <div class="am-expanded-lyrics no-drag hidden" id="am-expanded-lyrics">
+      <div class="am-lyrics-scroll" id="am-lyrics-scroll">
+        <div class="am-lyrics-empty" id="am-lyrics-empty">Текст этой песни недоступен.</div>
+      </div>
+    </div>
+
+    <!-- Large Artwork View (Artwork Mode - matches media_1793263301037_164cfb65.png) -->
+    <div class="am-artwork-view no-drag hidden" id="am-artwork-view">
+      <img id="am-large-art" class="am-large-art" src="" alt="Album Art" />
+    </div>
+
+    <!-- Bottom Controls Bar (Fixed at bottom) -->
+    <div class="am-controls-bar no-drag">
+      <!-- Left: Volume & Like -->
+      <div class="am-ctrl-group am-ctrl-left">
+        <button class="am-btn am-btn-vol" id="btn-vol" title="Громкость">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+          </svg>
+        </button>
+        <button class="am-btn am-btn-like" id="btn-like" title="Мне нравится">
+          <svg id="icon-like" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Center: Prev, Play/Pause, Next -->
+      <div class="am-ctrl-group am-ctrl-center">
+        <button class="am-btn am-btn-prev" id="btn-prev" title="Предыдущий трек">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+            <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
+          </svg>
+        </button>
+        <button class="am-btn am-btn-play" id="btn-play" title="Воспроизведение / Пауза">
+          <svg id="icon-play" viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+            <path d="M8 5v14l11-7z"/>
+          </svg>
+          <svg id="icon-pause" class="hidden" viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+          </svg>
+        </button>
+        <button class="am-btn am-btn-next" id="btn-next" title="Следующий трек">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+            <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Right: Lyrics Toggle, Karaoke Capsule Launcher, Queue -->
+      <div class="am-ctrl-group am-ctrl-right">
+        <button class="am-btn am-btn-lyrics active" id="btn-lyrics-toggle" title="Текст песни (Apple Music View)">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor">
+            <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-6 10H7v-2h7v2zm3-4H7V6h10v2z"/>
+          </svg>
+        </button>
+        <button class="am-btn am-btn-karaoke" id="btn-karaoke" title="Плавающее караоке (Ctrl+Shift+L)">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+            <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+          </svg>
+        </button>
       </div>
     </div>
   </div>
