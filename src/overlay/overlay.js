@@ -1,4 +1,4 @@
-// Apple Music macOS MiniPlayer Overlay Controller (v1.3.9)
+// Apple Music macOS MiniPlayer Overlay Controller (v1.3.10)
 // Real-time 60fps interpolation, 1-in-1 lyrics synchronization, smooth centering scroll, click-to-seek
 
 const isBrowser = typeof window !== "undefined" && typeof document !== "undefined";
@@ -112,11 +112,14 @@ function formatRemainingTime(seconds, duration) {
 
 function parseLRC(lrcText, duration = 0) {
   if (!lrcText) return [];
+  let items = [];
+  let hasExplicitTime = false;
+
   if (Array.isArray(lrcText)) {
-    return lrcText
+    items = lrcText
       .map((item) => {
-        let t = 0;
-        if (item.time !== undefined) {
+        let t = -1;
+        if (item.time !== undefined && item.time !== null) {
           t = Number(item.time);
         } else if (item.fromSec !== undefined) {
           t = Number(item.fromSec);
@@ -127,66 +130,82 @@ function parseLRC(lrcText, duration = 0) {
         } else if (item.offset !== undefined) {
           t = Number(item.offset) > 1000 ? Number(item.offset) / 1000 : Number(item.offset);
         }
+        if (t >= 0) hasExplicitTime = true;
         return {
           time: t,
-          text: item.text || item.line || "",
+          text: (item.text || item.line || "").trim(),
         };
       })
-      .filter((x) => x.text && x.text.trim())
-      .sort((a, b) => a.time - b.time);
-  }
+      .filter((x) => x.text && x.text.trim());
+  } else if (typeof lrcText === "string") {
+    const rawLines = lrcText.split("\n");
+    let globalOffsetMs = 0;
 
-  if (typeof lrcText !== "string") return [];
-  const rawLines = lrcText.split("\n");
-  const parsed = [];
-  let globalOffsetMs = 0;
-
-  for (const line of rawLines) {
-    const offsetMatch = line.match(/^\[offset:\s*([+-]?\d+)\]/i);
-    if (offsetMatch) {
-      globalOffsetMs = parseInt(offsetMatch[1], 10) || 0;
-      break;
-    }
-  }
-
-  const tagRegex = /\[(\d{1,2}):(\d{2})(?:[.:](\d{1,3}))?\]/g;
-
-  for (const line of rawLines) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-    if (/^\[([a-zA-Z][a-zA-Z0-9_-]*):\s*([^\]]*)\]/.test(trimmed)) continue;
-
-    const timestamps = [];
-    let match;
-    tagRegex.lastIndex = 0;
-
-    while ((match = tagRegex.exec(trimmed)) !== null) {
-      const min = parseInt(match[1], 10);
-      const sec = parseInt(match[2], 10);
-      let ms = 0;
-      if (match[3]) {
-        const rawMs = match[3];
-        if (rawMs.length === 1) ms = parseInt(rawMs, 10) * 100;
-        else if (rawMs.length === 2) ms = parseInt(rawMs, 10) * 10;
-        else ms = parseInt(rawMs, 10);
+    for (const line of rawLines) {
+      const offsetMatch = line.match(/^\[offset:\s*([+-]?\d+)\]/i);
+      if (offsetMatch) {
+        globalOffsetMs = parseInt(offsetMatch[1], 10) || 0;
+        break;
       }
-      const time = Math.max(0, min * 60 + sec + (ms + globalOffsetMs) / 1000);
-      timestamps.push(time);
     }
 
-    const cleanText = trimmed.replace(tagRegex, "").trim();
-    if (cleanText) {
-      if (timestamps.length > 0) {
-        for (const t of timestamps) {
-          parsed.push({ time: t, text: cleanText });
+    const tagRegex = /\[(\d{1,2}):(\d{2})(?:[.:](\d{1,3}))?\]/g;
+
+    for (const line of rawLines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      if (/^\[([a-zA-Z][a-zA-Z0-9_-]*):\s*([^\]]*)\]/.test(trimmed)) continue;
+
+      const timestamps = [];
+      let match;
+      tagRegex.lastIndex = 0;
+
+      while ((match = tagRegex.exec(trimmed)) !== null) {
+        const min = parseInt(match[1], 10);
+        const sec = parseInt(match[2], 10);
+        let ms = 0;
+        if (match[3]) {
+          const rawMs = match[3];
+          if (rawMs.length === 1) ms = parseInt(rawMs, 10) * 100;
+          else if (rawMs.length === 2) ms = parseInt(rawMs, 10) * 10;
+          else ms = parseInt(rawMs, 10);
         }
-      } else {
-        parsed.push({ time: 0, text: cleanText });
+        const time = Math.max(0, min * 60 + sec + (ms + globalOffsetMs) / 1000);
+        timestamps.push(time);
+        hasExplicitTime = true;
+      }
+
+      const cleanText = trimmed.replace(tagRegex, "").trim();
+      if (cleanText) {
+        if (timestamps.length > 0) {
+          for (const t of timestamps) {
+            items.push({ time: t, text: cleanText });
+          }
+        } else {
+          items.push({ time: -1, text: cleanText });
+        }
       }
     }
   }
 
-  return parsed.sort((a, b) => a.time - b.time);
+  if (items.length === 0) return [];
+
+  // If track has plain lyrics without LRC timestamps, distribute them evenly across duration!
+  if (!hasExplicitTime) {
+    const effDur = duration > 0 ? duration : (trackDuration > 0 ? trackDuration : 180);
+    const startOffset = Math.min(3, effDur * 0.03);
+    const availableTime = Math.max(10, effDur - startOffset - 2);
+    const step = availableTime / Math.max(1, items.length);
+
+    items.forEach((item, idx) => {
+      item.time = +(startOffset + idx * step).toFixed(2);
+      item.isSyntheticTime = true;
+    });
+  } else {
+    items.sort((a, b) => a.time - b.time);
+  }
+
+  return items;
 }
 
 function escapeHtml(text) {
@@ -212,12 +231,8 @@ function renderProgress(pos) {
   syncLyricsPosition(pos);
 }
 
-function syncLyricsPosition(pos) {
-  if (!overlayLyrics || overlayLyrics.length === 0) {
-    if (compactLine) compactLine.textContent = "♫ Текст этой песни недоступен.";
-    return;
-  }
-
+function findActiveLyricIndex(pos) {
+  if (!overlayLyrics || overlayLyrics.length === 0) return -1;
   let activeIdx = -1;
   for (let i = 0; i < overlayLyrics.length; i++) {
     if (overlayLyrics[i].time <= pos + 0.15) {
@@ -226,10 +241,19 @@ function syncLyricsPosition(pos) {
       break;
     }
   }
-
-  if (activeIdx === -1 && overlayLyrics.length > 0) {
+  if (activeIdx === -1 && overlayLyrics.length > 0 && pos >= 0) {
     activeIdx = 0;
   }
+  return activeIdx;
+}
+
+function syncLyricsPosition(pos) {
+  if (!overlayLyrics || overlayLyrics.length === 0) {
+    if (compactLine) compactLine.textContent = "♫ Текст этой песни недоступен.";
+    return;
+  }
+
+  const activeIdx = findActiveLyricIndex(pos);
 
   // Update Compact Karaoke Line
   if (compactLine && activeIdx >= 0 && activeIdx < overlayLyrics.length) {
@@ -271,9 +295,17 @@ function renderFullLyricsUI() {
     return;
   }
 
+  const pos = getInterpolatedPosition();
+  const activeIdx = findActiveLyricIndex(pos);
+
   lyricsScroll.innerHTML = overlayLyrics
-    .map((item, idx) => `<div class="am-lrc-line" data-idx="${idx}" data-time="${item.time}">${escapeHtml(item.text)}</div>`)
+    .map((item, idx) => {
+      const isActive = idx === activeIdx;
+      return `<div class="am-lrc-line ${isActive ? "active" : ""}" data-idx="${idx}" data-time="${item.time}">${escapeHtml(item.text)}</div>`;
+    })
     .join("");
+
+  overlayLyricsIndex = activeIdx;
 
   lyricsScroll.querySelectorAll(".am-lrc-line").forEach((el) => {
     el.addEventListener("click", () => {
@@ -293,8 +325,19 @@ function renderFullLyricsUI() {
     });
   });
 
-  const pos = getInterpolatedPosition();
-  syncLyricsPosition(pos);
+  if (activeIdx >= 0) {
+    requestAnimationFrame(() => {
+      const activeEl = lyricsScroll.querySelector(`.am-lrc-line[data-idx="${activeIdx}"]`);
+      if (activeEl) {
+        const containerHeight = lyricsScroll.clientHeight;
+        const targetScrollTop = activeEl.offsetTop - containerHeight / 2 + activeEl.clientHeight / 2;
+        lyricsScroll.scrollTo({
+          top: Math.max(0, targetScrollTop),
+          behavior: "auto",
+        });
+      }
+    });
+  }
 }
 
 function tickInterpolation() {
@@ -361,6 +404,7 @@ function setViewMode(mode) {
     if (window.overlayApi && window.overlayApi.resizeOverlay) {
       window.overlayApi.resizeOverlay(380, 480);
     }
+    overlayLyricsIndex = -1;
     renderFullLyricsUI();
   } else if (mode === "artwork") {
     if (compactKaraoke) compactKaraoke.classList.add("hidden");
@@ -466,7 +510,18 @@ function updateUI(state) {
 
     basePosition = newPos;
     baseTimestamp = (typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now();
-    if (newDur > 0) trackDuration = newDur;
+    if (newDur > 0) {
+      const durChanged = Math.abs(newDur - trackDuration) > 1;
+      trackDuration = newDur;
+      if (durChanged && overlayLyrics && overlayLyrics.length > 0 && overlayLyrics[0].isSyntheticTime) {
+        const startOffset = Math.min(3, trackDuration * 0.03);
+        const availableTime = Math.max(10, trackDuration - startOffset - 2);
+        const step = availableTime / Math.max(1, overlayLyrics.length);
+        overlayLyrics.forEach((item, idx) => {
+          item.time = +(startOffset + idx * step).toFixed(2);
+        });
+      }
+    }
     playbackSpeed = newSpeed > 0 ? newSpeed : 1.0;
 
     renderProgress(basePosition);

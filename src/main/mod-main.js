@@ -827,7 +827,7 @@ function setupIpcHandlers() {
             url,
             {
               headers: {
-                "User-Agent": "YandexMusicMod/1.3.9 (Windows NT 10.0; Win64; x64)",
+                "User-Agent": "YandexMusicMod/1.3.10 (Windows NT 10.0; Win64; x64)",
                 "Accept": "application/json, text/plain, */*",
                 ...extraHeaders,
               },

@@ -15,7 +15,7 @@ VIProductVersion "5.124.1.0"
 VIAddVersionKey "ProductName" "Яндекс Музыка Mod"
 VIAddVersionKey "CompanyName" "alexis0eu"
 VIAddVersionKey "LegalCopyright" "alexis0eu"
-VIAddVersionKey "FileDescription" "Яндекс Музыка Mod v1.3.9"
+VIAddVersionKey "FileDescription" "Яндекс Музыка Mod v1.3.10"
 VIAddVersionKey "FileVersion" "5.124.1.0"
 
 !define MUI_ICON "..\assets\icon.ico"
